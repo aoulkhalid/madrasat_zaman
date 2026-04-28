@@ -1,0 +1,73 @@
+"""
+games/logo_data.py — 60 challenges logos (20 par match)
+Format: { "name": str, "image": filename, "hint": str }
+Le présentateur affiche le logo et clique Bonne/Mauvaise réponse.
+"""
+
+ALL_LOGOS = [
+    # ── MATCH 1 (logos 1–20) ──────────────────────────────────────────────────
+    {"name": "AQUA", "image": "logo_01.png", "hint": "Marque d'eau minérale 💧"},
+    {"name": "VERDA", "image": "logo_02.png", "hint": "Marque écologique 🌿"},
+    {"name": "SOLARA", "image": "logo_03.png", "hint": "Énergie solaire ☀️"},
+    {"name": "NEXON", "image": "logo_04.png", "hint": "Technologie avancée ⚡"},
+    {"name": "FLORA", "image": "logo_05.png", "hint": "Produits naturels 🌸"},
+    {"name": "ORBITA", "image": "logo_06.png", "hint": "Transport & mobilité 🚀"},
+    {"name": "LUMINA", "image": "logo_07.png", "hint": "Éclairage & design 💡"},
+    {"name": "STRATOS", "image": "logo_08.png", "hint": "Aviation 🌤️"},
+    {"name": "VORTEX", "image": "logo_09.png", "hint": "Sport & performance 🌀"},
+    {"name": "CYPHA", "image": "logo_10.png", "hint": "Données & sécurité 🔐"},
+    {"name": "TEROVA", "image": "logo_11.png", "hint": "Immobilier 🏗️"},
+    {"name": "BLAZON", "image": "logo_12.png", "hint": "Mode & luxe 💎"},
+    {"name": "HELIX", "image": "logo_13.png", "hint": "Santé & pharmacie 🧬"},
+    {"name": "ARCTIS", "image": "logo_14.png", "hint": "Froid & logistique ❄️"},
+    {"name": "PYREX", "image": "logo_15.png", "hint": "Chimie & matériaux 🔬"},
+    {"name": "AMBIA", "image": "logo_16.png", "hint": "Sons & musique 🎵"},
+    {"name": "CRESPO", "image": "logo_17.png", "hint": "Alimentation 🍽️"},
+    {"name": "DURAZO", "image": "logo_18.png", "hint": "Outillage & BTP 🔧"},
+    {"name": "EKOVA", "image": "logo_19.png", "hint": "E-commerce 🛒"},
+    {"name": "FULCO", "image": "logo_20.png", "hint": "Finance & banque 💰"},
+
+    # ── MATCH 2 (logos 21–40) ─────────────────────────────────────────────────
+    {"name": "GLYCO", "image": "logo_21.png", "hint": "Boissons 🥤"},
+    {"name": "HYDRA", "image": "logo_22.png", "hint": "Sports aquatiques 🌊"},
+    {"name": "INOVA", "image": "logo_23.png", "hint": "Innovation ⚙️"},
+    {"name": "JETTO", "image": "logo_24.png", "hint": "Livraison express 📦"},
+    {"name": "KINOS", "image": "logo_25.png", "hint": "Cinéma & divertissement 🎬"},
+    {"name": "LENZO", "image": "logo_26.png", "hint": "Optique 👁️"},
+    {"name": "MARVEX", "image": "logo_27.png", "hint": "Automobile 🚗"},
+    {"name": "NOBILE", "image": "logo_28.png", "hint": "Hôtellerie 🏨"},
+    {"name": "OPULEN", "image": "logo_29.png", "hint": "Joaillerie 💍"},
+    {"name": "PAXTON", "image": "logo_30.png", "hint": "Sécurité & surveillance 🔒"},
+    {"name": "QUALIA", "image": "logo_31.png", "hint": "Design intérieur 🏠"},
+    {"name": "RAPTIX", "image": "logo_32.png", "hint": "Jeux vidéo 🎮"},
+    {"name": "SOLENO", "image": "logo_33.png", "hint": "Agriculture 🌾"},
+    {"name": "TEKLOW", "image": "logo_34.png", "hint": "Informatique 💻"},
+    {"name": "UVANTA", "image": "logo_35.png", "hint": "Cosmétiques 💄"},
+    {"name": "VESTRO", "image": "logo_36.png", "hint": "Textile & mode 👗"},
+    {"name": "WAXON", "image": "logo_37.png", "hint": "Automobile & entretien 🚙"},
+    {"name": "XPERIA", "image": "logo_38.png", "hint": "Électronique 📱"},
+    {"name": "YARDON", "image": "logo_39.png", "hint": "Jardinage 🌻"},
+    {"name": "ZEPHYR", "image": "logo_40.png", "hint": "Ventilation & climatisation 🌬️"},
+
+    # ── MATCH 3 — Finale (logos 41–60) ───────────────────────────────────────
+    {"name": "ALPHACORE", "image": "logo_41.png", "hint": "Technologie IA 🤖"},
+    {"name": "BRIGHTCO", "image": "logo_42.png", "hint": "Énergie propre ♻️"},
+    {"name": "CHROMEX", "image": "logo_43.png", "hint": "Peinture & revêtements 🎨"},
+    {"name": "DYNAMO", "image": "logo_44.png", "hint": "Sport extrême ⚡"},
+    {"name": "ENTERRA", "image": "logo_45.png", "hint": "Mines & ressources ⛏️"},
+    {"name": "FERVEX", "image": "logo_46.png", "hint": "Pharmacie 💊"},
+    {"name": "GRADUS", "image": "logo_47.png", "hint": "Éducation 🎓"},
+    {"name": "HARMONA", "image": "logo_48.png", "hint": "Bien-être & spa 🧘"},
+    {"name": "ICEFLOW", "image": "logo_49.png", "hint": "Boissons fraîches 🧊"},
+    {"name": "JETMODE", "image": "logo_50.png", "hint": "Mode & tendance 👔"},
+    {"name": "KINGVEX", "image": "logo_51.png", "hint": "Royalties & licences 👑"},
+    {"name": "LIFTMAX", "image": "logo_52.png", "hint": "Ascenseurs & BTP 🏗️"},
+    {"name": "MEDOVA", "image": "logo_53.png", "hint": "Médecine & clinique 🏥"},
+    {"name": "NORTECH", "image": "logo_54.png", "hint": "Industrie nordique ❄️"},
+    {"name": "OPTIVEX", "image": "logo_55.png", "hint": "Optique de précision 🔭"},
+    {"name": "PROXIMA", "image": "logo_56.png", "hint": "Réseau & télécoms 📡"},
+    {"name": "QUANTUM", "image": "logo_57.png", "hint": "Informatique quantique 🔬"},
+    {"name": "RADIUM", "image": "logo_58.png", "hint": "Énergie nucléaire ☢️"},
+    {"name": "SYNCORE", "image": "logo_59.png", "hint": "Logiciels & SaaS 🖥️"},
+    {"name": "TRITON", "image": "logo_60.png", "hint": "Marine & nautisme ⚓"},
+]

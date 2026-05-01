@@ -1,21 +1,35 @@
 """
 pages/quiz_page.py — Quiz Game (mode 2 équipes, 20 questions par match)
+Style : carte originale (make_card) + boutons modernes (badge lettre coloré)
 """
 from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
                               QPushButton, QFrame, QGridLayout,
                               QProgressBar, QSizePolicy, QWidget)
-from PyQt5.QtCore    import Qt, QTimer
-from PyQt5.QtGui     import QFont, QPainter, QPixmap, QColor, QLinearGradient, QBrush
+from PyQt5.QtCore    import Qt, QTimer, QRect
+from PyQt5.QtGui     import (QFont, QPainter, QPixmap, QColor,
+                              QLinearGradient, QBrush, QPen, QPainterPath)
 import os, re
 from pages.base_page import BasePage
 from widgets.circular_timer import CircularTimer
 from config import C, TIMER_DURATION, POINTS_CORRECT
 
 
-BG_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "images", "background.png")
-_TRANSPARENT = "background: transparent; border: none; background-color: transparent;"
+BG_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "images", "background2.png")
+
+# ── Palette ────────────────────────────────────────────────────────────────────
+ACCENT_BLUE   = "#4f8ef7"
+ACCENT_PURPLE = "#a855f7"
+SUCCESS_COLOR = "#22d3a5"
+ERROR_COLOR   = "#f43f5e"
+TEXT_WHITE    = "#ffffff"
+TEXT_MUTED    = "rgba(255,255,255,180)"
+BLUE_NAME     = "#4f8ef7"
+_TRANSPARENT  = "background: transparent; border: none; background-color: transparent;"
+
+LETTER_COLORS = ["#4f8ef7", "#a855f7", "#06b6d4", "#f59e0b"]
 
 
+# ── Helpers ────────────────────────────────────────────────────────────────────
 def _make_transparent(widget):
     widget.setStyleSheet(_TRANSPARENT)
     widget.setAttribute(Qt.WA_TranslucentBackground, True)
@@ -29,6 +43,15 @@ def _make_transparent(widget):
             child.setAttribute(Qt.WA_TranslucentBackground, True)
 
 
+def _force_labels_blue(widget):
+    for child in widget.findChildren(QLabel):
+        child.setStyleSheet(
+            child.styleSheet()
+            + f" color: {BLUE_NAME}; font-weight: bold; background: transparent;"
+        )
+
+
+# ── Fond : image plein écran + overlay minimal ────────────────────────────────
 class _Background(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -38,16 +61,133 @@ class _Background(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.SmoothPixmapTransform)
         w, h = self.width(), self.height()
+
         if not self._bg_pixmap.isNull():
             p.drawPixmap(0, 0,
-                self._bg_pixmap.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
+                self._bg_pixmap.scaled(w, h,
+                    Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
         else:
             grad = QLinearGradient(0, 0, 0, h)
             grad.setColorAt(0.0, QColor("#dde6ed"))
             grad.setColorAt(1.0, QColor("#d6e3ec"))
             p.fillRect(self.rect(), QBrush(grad))
 
+        # Overlay ultra-léger
+        p.fillRect(self.rect(), QColor(0, 0, 0, 30))
 
+        # Ligne lumineuse en haut
+        lg = QLinearGradient(0, 0, w, 0)
+        lg.setColorAt(0.0,  QColor(79, 142, 247, 0))
+        lg.setColorAt(0.35, QColor(79, 142, 247, 160))
+        lg.setColorAt(0.65, QColor(168, 85, 247, 160))
+        lg.setColorAt(1.0,  QColor(168, 85, 247, 0))
+        p.setPen(QPen(QBrush(lg), 2))
+        p.drawLine(0, 2, w, 2)
+
+
+# ── Bouton réponse moderne : badge lettre coloré + paintEvent custom ───────────
+class _AnswerButton(QPushButton):
+
+    def __init__(self, idx: int, letter: str):
+        super().__init__()
+        self._idx    = idx
+        self._letter = letter
+        self._color  = LETTER_COLORS[idx]
+        self._state  = "default"
+        self._text   = ""
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setMinimumHeight(120)
+        self.setCursor(Qt.PointingHandCursor)
+        self.setStyleSheet("QPushButton { border: none; background: transparent; }")
+
+    def set_answer_text(self, txt: str):
+        self._text = txt
+        self.update()
+
+    def set_state(self, state: str):
+        self._state = state
+        self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        r = self.rect()
+        radius = 14
+
+        # ── Couleurs selon état ────────────────────────────────────
+        if self._state == "correct":
+            fill     = QColor(C["success_bg"])
+            border_c = QColor(C["success"])
+            text_c   = QColor(C["success"])
+            badge_c  = QColor(C["success"])
+            glow_c   = QColor(34, 211, 165, 50)
+        elif self._state == "wrong":
+            fill     = QColor(C["error_bg"])
+            border_c = QColor(C["error"])
+            text_c   = QColor(C["error"])
+            badge_c  = QColor(C["error"])
+            glow_c   = QColor(244, 63, 94, 45)
+        elif self._state == "disabled":
+            fill     = QColor(255, 255, 255, 130)
+            border_c = QColor(C["border"])
+            text_c   = QColor(150, 150, 150)
+            badge_c  = QColor(150, 150, 150)
+            glow_c   = QColor(0, 0, 0, 0)
+        else:
+            if self.underMouse() and self.isEnabled():
+                fill     = QColor("#edf4fb")
+                border_c = QColor(C["primary_light"])
+                glow_c   = QColor(79, 142, 247, 30)
+            else:
+                fill     = QColor(255, 255, 255, 210)
+                border_c = QColor(C["border"])
+                glow_c   = QColor(0, 0, 0, 0)
+            text_c  = QColor(C["text_dark"])
+            badge_c = QColor(self._color)
+
+        # Halo
+        if glow_c.alpha() > 0:
+            glow_path = QPainterPath()
+            glow_path.addRoundedRect(-3, -3, r.width()+6, r.height()+6, radius+3, radius+3)
+            p.fillPath(glow_path, QBrush(glow_c))
+
+        # Fond bouton
+        path = QPainterPath()
+        path.addRoundedRect(0, 0, r.width(), r.height(), radius, radius)
+        p.fillPath(path, QBrush(fill))
+
+        # Bordure
+        p.setPen(QPen(border_c, 2))
+        p.setBrush(Qt.NoBrush)
+        p.drawRoundedRect(1, 1, r.width()-2, r.height()-2, radius, radius)
+
+        # Badge lettre (cercle coloré)
+        badge_size = 56
+        badge_x    = 22
+        badge_y    = (r.height() - badge_size) // 2
+        badge_rect = QRect(badge_x, badge_y, badge_size, badge_size)
+        badge_fill = QColor(badge_c); badge_fill.setAlpha(28)
+        p.setBrush(QBrush(badge_fill))
+        p.setPen(QPen(badge_c, 1.5))
+        p.drawEllipse(badge_rect)
+        p.setPen(QPen(badge_c))
+        p.setFont(QFont("Segoe UI", 20, QFont.Bold))
+        p.drawText(badge_rect, Qt.AlignCenter, self._letter)
+
+        # Texte réponse
+        tx = badge_x + badge_size + 20
+        p.setPen(QPen(text_c))
+        p.setFont(QFont("Segoe UI", 22))
+        p.drawText(QRect(tx, 0, r.width()-tx-12, r.height()),
+                   Qt.AlignVCenter | Qt.TextWordWrap, self._text)
+
+    def enterEvent(self, e):
+        super().enterEvent(e); self.update()
+    def leaveEvent(self, e):
+        super().leaveEvent(e); self.update()
+
+
+# ── Page principale ────────────────────────────────────────────────────────────
 class QuizPage(BasePage):
 
     LETTERS = ["A", "B", "C", "D"]
@@ -74,10 +214,12 @@ class QuizPage(BasePage):
         hdr = self._add_header(show_back=True)
         hdr.set_center("QUIZ GAME")
         _make_transparent(hdr)
+        _force_labels_blue(hdr)
 
         # ── Bandeau équipe ────────────────────────────────────────
         self._team_banner = self._add_team_banner()
         _make_transparent(self._team_banner)
+        _force_labels_blue(self._team_banner)
 
         # ── Timer + Scoreboard ────────────────────────────────────
         self._timer = CircularTimer(duration=TIMER_DURATION, size=88)
@@ -89,8 +231,9 @@ class QuizPage(BasePage):
                 w = item.widget()
                 if isinstance(w, (QFrame, QWidget)):
                     _make_transparent(w)
+                    _force_labels_blue(w)
 
-        # ── Barre de progression + label (juste sous le scoreboard)
+        # ── Barre de progression ──────────────────────────────────
         prog_container = QFrame()
         prog_container.setStyleSheet("background: transparent;")
         prog_container.setFixedHeight(30)
@@ -110,13 +253,14 @@ class QuizPage(BasePage):
         self._progress.setTextVisible(False)
         self._progress.setFixedHeight(7)
         self._progress.setStyleSheet(
-            f"QProgressBar {{ background: {C['border']}; border-radius: 4px; border:none; }}"
-            f"QProgressBar::chunk {{ background: {C['primary']}; border-radius: 4px; }}"
+            f"QProgressBar {{ background: {C['border']}; border-radius:4px; border:none; }}"
+            f"QProgressBar::chunk {{ background: qlineargradient(x1:0,y1:0,x2:1,y2:0,"
+            f"stop:0 {ACCENT_BLUE}, stop:1 {ACCENT_PURPLE}); border-radius:4px; }}"
         )
         prog_v.addWidget(self._progress)
         self._root_layout.addWidget(prog_container)
 
-        # ── Carte de question — prend tout l'espace restant ───────
+        # ── Carte ORIGINALE (make_card) ───────────────────────────
         self._card = self._make_card()
         self._card.setStyleSheet("""
             QFrame {
@@ -124,14 +268,12 @@ class QuizPage(BasePage):
                 border-radius: 22px;
             }
         """)
-        # La carte s'étire verticalement pour remplir jusqu'aux symboles
         self._card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         card_layout = QVBoxLayout(self._card)
         card_layout.setContentsMargins(44, 10, 44, 10)
         card_layout.setSpacing(0)
 
-        # Stretch haut — centre verticalement le contenu dans la carte
         card_layout.addStretch(1)
 
         # Texte de la question
@@ -146,27 +288,24 @@ class QuizPage(BasePage):
 
         card_layout.addSpacing(18)
 
-        # Grille 2×2
+        # Grille 2×2 — boutons MODERNES
         grid_frame = QFrame()
         grid_frame.setStyleSheet("background: transparent;")
         grid = QGridLayout(grid_frame)
-        grid.setSpacing(16)
-        self._ans_btns = []
+        grid.setSpacing(18)
+        self._ans_btns: list[_AnswerButton] = []
         for i in range(4):
-            btn = self._make_answer_button(i)
+            btn = _AnswerButton(i, self.LETTERS[i])
+            btn.clicked.connect(lambda checked, idx=i: self._on_answer(idx))
             grid.addWidget(btn, i // 2, i % 2)
             self._ans_btns.append(btn)
         card_layout.addWidget(grid_frame)
 
-        # Stretch bas
         card_layout.addStretch(1)
 
-        # Marges horizontales de la carte = identiques au screenshot
         wrap = QHBoxLayout()
         wrap.setContentsMargins(36, 2, 36, 2)
         wrap.addWidget(self._card)
-
-        # Ce layout prend tout l'espace disponible
         self._root_layout.addLayout(wrap, stretch=1)
 
         # État
@@ -177,38 +316,14 @@ class QuizPage(BasePage):
         self._auto_timer.setSingleShot(True)
         self._auto_timer.timeout.connect(self._next_question)
 
-    def _make_answer_button(self, idx: int) -> QPushButton:
-        btn = QPushButton(f"  {self.LETTERS[idx]}   ")
-        btn.setObjectName("answer_btn")
-        btn.setFont(QFont("Segoe UI", 16))
-        btn.setMinimumHeight(76)
-        btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        btn.setStyleSheet(
-            f"QPushButton#answer_btn {{"
-            f"  background: rgba(255,255,255,210);"
-            f"  border: 2px solid {C['border']};"
-            f"  border-radius: 14px;"
-            f"  text-align: left;"
-            f"  padding: 14px 20px;"
-            f"  color: {C['text_dark']};"
-            f"}}"
-            f"QPushButton#answer_btn:hover:enabled {{"
-            f"  background: #edf4fb;"
-            f"  border-color: {C['primary_light']};"
-            f"}}"
-        )
-        btn.clicked.connect(lambda checked, i=idx: self._on_answer(i))
-        btn._idx = idx
-        return btn
-
     # ── Logique ───────────────────────────────────────────────────
-
     def on_show(self, **kwargs):
         self._questions = self.mw.tc.get_quiz_slice()
         self._q_idx     = 0
         self.mw.tc.current_match._turn_index = 0
         self._refresh_team_banner()
         _make_transparent(self._team_banner)
+        _force_labels_blue(self._team_banner)
         self._update_scores(self._boxes)
         self._load_question()
 
@@ -223,6 +338,7 @@ class QuizPage(BasePage):
 
         self._refresh_team_banner()
         _make_transparent(self._team_banner)
+        _force_labels_blue(self._team_banner)
         self._update_scores(self._boxes)
 
         n = len(self._questions)
@@ -235,23 +351,9 @@ class QuizPage(BasePage):
 
         for i, btn in enumerate(self._ans_btns):
             txt = q["choices"][i] if i < len(q["choices"]) else ""
-            btn.setText(f"  {self.LETTERS[i]}   {txt}")
+            btn.set_answer_text(txt)
+            btn.set_state("default")
             btn.setEnabled(True)
-            btn.setStyleSheet(
-                f"QPushButton#answer_btn {{"
-                f"  background: rgba(255,255,255,210);"
-                f"  border: 2px solid {C['border']};"
-                f"  border-radius: 14px;"
-                f"  text-align: left;"
-                f"  padding: 14px 20px;"
-                f"  font-size: 16px;"
-                f"  color: {C['text_dark']};"
-                f"}}"
-                f"QPushButton#answer_btn:hover {{"
-                f"  background: #edf4fb;"
-                f"  border-color: {C['primary_light']};"
-                f"}}"
-            )
 
         self._timer.reset(TIMER_DURATION)
         self._timer.start()
@@ -266,9 +368,14 @@ class QuizPage(BasePage):
 
         correct_idx = self._questions[self._q_idx]["answer"]
         is_correct  = (idx == correct_idx)
-        self._highlight_btn(idx, correct=is_correct)
-        if not is_correct:
-            self._highlight_btn(correct_idx, correct=True)
+
+        for i, btn in enumerate(self._ans_btns):
+            if i == correct_idx:
+                btn.set_state("correct")
+            elif i == idx and not is_correct:
+                btn.set_state("wrong")
+            else:
+                btn.set_state("disabled")
 
         self.mw.tc.answer("quiz", is_correct)
         self._update_scores(self._boxes)
@@ -277,30 +384,14 @@ class QuizPage(BasePage):
     def _on_timeout(self):
         if not self._answered:
             self._answered = True
-            for btn in self._ans_btns:
+            for i, btn in enumerate(self._ans_btns):
                 btn.setEnabled(False)
             correct = self._questions[self._q_idx]["answer"]
-            self._highlight_btn(correct, correct=True)
+            for i, btn in enumerate(self._ans_btns):
+                btn.set_state("correct" if i == correct else "disabled")
             self.mw.tc.answer("quiz", False)
             self._update_scores(self._boxes)
             self._auto_timer.start(1100)
-
-    def _highlight_btn(self, idx: int, correct: bool):
-        btn = self._ans_btns[idx]
-        if correct:
-            btn.setStyleSheet(
-                f"QPushButton {{ background: {C['success_bg']};"
-                f" border: 2px solid {C['success']}; border-radius: 14px;"
-                f" text-align: left; padding: 14px 20px; font-size: 16px;"
-                f" color: {C['success']}; font-weight: bold; }}"
-            )
-        else:
-            btn.setStyleSheet(
-                f"QPushButton {{ background: {C['error_bg']};"
-                f" border: 2px solid {C['error']}; border-radius: 14px;"
-                f" text-align: left; padding: 14px 20px; font-size: 16px;"
-                f" color: {C['error']}; font-weight: bold; }}"
-            )
 
     def _next_question(self):
         self.mw.tc.next_turn()

@@ -48,7 +48,7 @@ class HeaderWidget(QFrame):
             layout.addWidget(self._back)
 
         # Logo texte — bleu gras
-        brand = QLabel("⬡  CS CLUB")
+        brand = QLabel("CS CLUB")
         brand.setObjectName("header_brand")
         brand.setFont(QFont("Georgia", 11, QFont.Bold))
         brand.setStyleSheet(
@@ -289,7 +289,7 @@ class BasePage(QWidget):
         btn.setMinimumWidth(width)
         btn.setFont(QFont("Segoe UI", 13, QFont.Bold))
         btn.setStyleSheet(
-            f"QPushButton {{ background: {ACCENT_BLUE}; color: white;"
+            f"QPushButton {{ background: {ACCENT_BLUE}; color: red;"
             f" border-radius: 12px; border: none; }}"
             f"QPushButton:hover {{ background: #3a7de8; }}"
         )

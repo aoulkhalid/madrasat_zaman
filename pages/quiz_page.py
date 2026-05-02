@@ -1,3 +1,4 @@
+
 """
 pages/quiz_page.py — Quiz Game (mode 2 équipes, 20 questions par match)
 Style : carte originale (make_card) + boutons modernes (badge lettre coloré)
@@ -11,6 +12,7 @@ from PyQt5.QtGui     import (QFont, QPainter, QPixmap, QColor,
 import os, re
 from pages.base_page import BasePage
 from widgets.circular_timer import CircularTimer
+from audio.manager import AudioManager
 from config import C, TIMER_DURATION, POINTS_CORRECT
 
 
@@ -315,6 +317,7 @@ class QuizPage(BasePage):
         self._auto_timer = QTimer()
         self._auto_timer.setSingleShot(True)
         self._auto_timer.timeout.connect(self._next_question)
+        self._audio = AudioManager()
 
     # ── Logique ───────────────────────────────────────────────────
     def on_show(self, **kwargs):
@@ -357,12 +360,15 @@ class QuizPage(BasePage):
 
         self._timer.reset(TIMER_DURATION)
         self._timer.start()
+        self._audio.stop()
+        self._audio.play("tension")
 
     def _on_answer(self, idx: int):
         if self._answered:
             return
         self._answered = True
         self._timer.stop()
+        self._audio.stop()
         for btn in self._ans_btns:
             btn.setEnabled(False)
 
@@ -383,6 +389,7 @@ class QuizPage(BasePage):
 
     def _on_timeout(self):
         if not self._answered:
+            self._audio.stop()
             self._answered = True
             for i, btn in enumerate(self._ans_btns):
                 btn.setEnabled(False)

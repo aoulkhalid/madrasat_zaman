@@ -3,7 +3,6 @@ games/logo_data.py — 60 challenges logos (20 par match)
 Format: { "name": str, "image": filename, "hint": str }
 Le présentateur affiche le logo et clique Bonne/Mauvaise réponse.
 """
-
 ALL_LOGOS = [
     # ── MATCH 1 (logos 1–20) ──────────────────────────────────────────────────
     {"name": "AQUA", "image": "logo_01.png", "hint": "Marque d'eau minérale 💧"},

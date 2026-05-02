@@ -93,6 +93,8 @@ class ImageCanvas(QLabel):
             "padding: 0px;"
         )
 
+
+
     def set_circles(self, circles):
         self._circles = circles
         self.update()
@@ -218,7 +220,7 @@ class DifferencePage(BasePage):
 
         # ── Zone images — prend tout l'espace disponible ──────────
         images_wrap = QFrame()
-        images_wrap.setStyleSheet("background: transparent; border: none;")
+        images_wrap.setStyleSheet("background: black; border: solid black 5px;")
         images_wrap.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         images_v = QVBoxLayout(images_wrap)
         images_v.setContentsMargins(28, 2, 28, 2)
@@ -243,6 +245,11 @@ class DifferencePage(BasePage):
         self._cv_right = ImageCanvas()
         self._cv_right.setCursor(Qt.CrossCursor)
         self._cv_right.mousePressEvent = self._on_image_click
+
+        w = self._cv_left.width()
+        h = self._cv_left.height()
+
+        print(w, h)
 
         canvas_row.addWidget(self._cv_left,  1)
         canvas_row.addWidget(self._cv_right, 1)

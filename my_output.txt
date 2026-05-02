@@ -1,0 +1,2 @@
+/home/mohamed/Documents/mohamed/madrasat_zaman/assets/images/diff/5.Solution.jpeg
+"diffs": [(189,26,41), (573,62,26), (388,204,36), (225,277,22), (230,444,56)]

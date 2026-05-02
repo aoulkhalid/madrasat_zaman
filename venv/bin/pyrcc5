@@ -1,4 +1,4 @@
-#!/home/el-aoula/Documents/cs_club/evant_project/madrasat_zaman_v3_tournoi/mz_v3/venv/bin/python3
+#!/home/mohamed/Documents/mohamed/madrasat_zaman/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

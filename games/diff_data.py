@@ -1,6 +1,6 @@
 """
 games/diff_data.py — 30 paires d'images (10 par match)
-Format fichiers : 1.Left.jpg / 1.Right.jpg ... 30.Left.jpg / 30.Right.jpg
+Format fichiers : 1.Left.jpeg / 1.Right.jpeg ... 30.Left.jpeg / 30.Right.jpeg
 """
 
 ALL_DIFFS = [
@@ -8,99 +8,114 @@ ALL_DIFFS = [
     # ══════════════════════════════════════════════════════════════
     # MATCH 1 — Demi-finale 1  (images 1–10)
     # ══════════════════════════════════════════════════════════════
-    {"left": "1.Left.jpg",  "right": "1.Right.jpg",  "title": "Image 1",
-     "diffs": [(280,38,20),(82,112,18),(172,208,18),(308,172,18),(58,198,16)]},
+    {"left": "1.Left.jpeg",  "right": "1.Right.jpeg",  "title": "Image 1",
+     "diffs": [(153,50,35), (615,135,20), (45,309,40), (426,373,61), (579,451,42)]},
 
-    {"left": "2.Left.jpg",  "right": "2.Right.jpg",  "title": "Image 2",
-     "diffs": [(260,50,20),(90,130,18),(190,190,18),(310,160,16),(70,210,18)]},
+    {"left": "2.Left.jpeg",  "right": "2.Right.jpeg",  "title": "Image 2",
+     "diffs": [(184,139,44), (579,145,48), (285,271,35), (491,315,29), (87,389,69)]},
 
-    {"left": "3.Left.jpg",  "right": "3.Right.jpg",  "title": "Image 3",
-     "diffs": [(270,40,20),(80,100,18),(180,200,18),(300,180,18),(60,220,16)]},
+    {"left": "3.Left.jpeg",  "right": "3.Right.jpeg",  "title": "Image 3",
+     "diffs": [(280,111,39), (517,163,36), (518,311,26), (84,390,19), (375,438,32)]},
 
-    {"left": "4.Left.jpg",  "right": "4.Right.jpg",  "title": "Image 4",
-     "diffs": [(250,45,20),(95,125,18),(185,195,18),(305,165,18),(65,215,16)]},
+    {"left": "4.Left.jpeg",  "right": "4.Right.jpeg",  "title": "Image 4",
+     "diffs": [(473,30,49), (565,193,58), (245,244,31), (133,444,56), (590,450,39)]},
 
-    {"left": "5.Left.jpg",  "right": "5.Right.jpg",  "title": "Image 5",
-     "diffs": [(290,42,20),(75,118,18),(175,205,18),(295,175,18),(55,200,16)]},
+    {"left": "5.Left.jpeg",  "right": "5.Right.jpeg",  "title": "Image 5",
+     "diffs": [(189,26,41), (573,62,26), (388,204,36), (225,277,22), (230,444,56)]},
 
-    {"left": "6.Left.jpg",  "right": "6.Right.jpg",  "title": "Image 6",
-     "diffs": [(265,48,20),(88,115,18),(168,202,18),(298,170,18),(62,210,16)]},
+    {"left": "6.Left.jpeg",  "right": "6.Right.jpeg",  "title": "Image 6",
+     "diffs": [(528,52,30), (414,84,35), (34,150,28), (284,250,35), (500,384,111)]},
 
-    {"left": "7.Left.jpg",  "right": "7.Right.jpg",  "title": "Image 7",
-     "diffs": [(275,36,20),(78,108,18),(178,198,18),(312,168,18),(52,195,16)]},
+    {"left": "7.Left.jpeg",  "right": "7.Right.jpeg",  "title": "Image 7",
+     "diffs": [(601,159,35), (194,214,21), (373,231,42), (510,244,59), (167,258,37)]},
 
-    {"left": "8.Left.jpg",  "right": "8.Right.jpg",  "title": "Image 8",
-     "diffs": [(255,55,20),(92,122,18),(192,192,18),(302,162,16),(68,212,18)]},
+    {"left": "8.Left.jpeg",  "right": "8.Right.jpeg",  "title": "Image 8",
+     "diffs": [(444,146,20), (316,151,44), (77,207,64), (353,266,25), (138,404,22)]},
 
-    {"left": "9.Left.jpg",  "right": "9.Right.jpg",  "title": "Image 9",
-     "diffs": [(285,40,20),(85,110,18),(165,205,18),(305,178,18),(60,202,16)]},
+    {"left": "9.Left.jpeg",  "right": "9.Right.jpeg",  "title": "Image 9",
+    "diffs": [(379,31,29), (240,159,28), (572,257,26), (64,292,42), (566,392,42)]},
 
-    {"left": "10.Left.jpg", "right": "10.Right.jpg", "title": "Image 10",
-     "diffs": [(262,52,20),(88,128,18),(188,192,18),(308,158,16),(72,208,18)]},
+    {"left": "10.Left.jpeg", "right": "10.Right.jpeg", "title": "Image 10",
+     "diffs": [(543,85,41), (70,92,41), (140,305,52), (465,428,42), (158,440,46)]},
 
     # ══════════════════════════════════════════════════════════════
     # MATCH 2 — Demi-finale 2  (images 11–20)
     # ══════════════════════════════════════════════════════════════
-    {"left": "11.Left.jpg", "right": "11.Right.jpg", "title": "Image 11",
-     "diffs": [(278,44,20),(84,114,18),(174,204,18),(294,174,18),(56,196,16)]},
+    {"left": "11.Left.jpeg", "right": "11.Right.jpeg", "title": "Image 11",
+     "diffs": [(74,62,48), (260,160,28), (59,255,47), (527,283,47), (330,290,46)]},
 
-    {"left": "12.Left.jpg", "right": "12.Right.jpg", "title": "Image 12",
-     "diffs": [(268,46,20),(86,116,18),(186,196,18),(306,166,16),(66,214,18)]},
+    {"left": "12.Left.jpeg", "right": "12.Right.jpeg", "title": "Image 12",
+     "diffs": [(602,22,30), (311,128,39), (402,334,47), (71,338,24), (86,427,30)]},
 
-    {"left": "13.Left.jpg", "right": "13.Right.jpg", "title": "Image 13",
-     "diffs": [(272,38,20),(82,106,18),(182,202,18),(302,176,18),(58,198,16)]},
+    {"left": "13.Left.jpeg", "right": "13.Right.jpeg", "title": "Image 13",
+     "diffs": [(74,64,44), (600,127,34), (145,298,35), (538,333,22), (414,408,46)]},
 
-    {"left": "14.Left.jpg", "right": "14.Right.jpg", "title": "Image 14",
-     "diffs": [(258,54,20),(90,124,18),(194,188,18),(314,154,16),(70,206,18)]},
+    {"left": "14.Left.jpeg", "right": "14.Right.jpeg", "title": "Image 14",
+    "diffs": [(188,21,54), (572,62,32), (387,204,45), (224,276,26), (229,449,73)]},
 
-    {"left": "15.Left.jpg", "right": "15.Right.jpg", "title": "Image 15",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    {"left": "15.Left.jpeg", "right": "15.Right.jpeg", "title": "Image 15",
      "diffs": [(282,42,20),(80,112,18),(170,206,18),(296,172,18),(64,200,16)]},
 
-    {"left": "16.Left.jpg", "right": "16.Right.jpg", "title": "Image 16",
+    {"left": "16.Left.jpeg", "right": "16.Right.jpeg", "title": "Image 16",
      "diffs": [(264,50,20),(94,120,18),(184,194,18),(310,160,16),(74,210,18)]},
 
-    {"left": "17.Left.jpg", "right": "17.Right.jpg", "title": "Image 17",
+    {"left": "17.Left.jpeg", "right": "17.Right.jpeg", "title": "Image 17",
      "diffs": [(276,36,20),(76,108,18),(176,200,18),(300,180,18),(54,194,16)]},
 
-    {"left": "18.Left.jpg", "right": "18.Right.jpg", "title": "Image 18",
+    {"left": "18.Left.jpeg", "right": "18.Right.jpeg", "title": "Image 18",
      "diffs": [(256,56,20),(96,126,18),(196,186,18),(316,156,16),(76,216,18)]},
 
-    {"left": "19.Left.jpg", "right": "19.Right.jpg", "title": "Image 19",
+    {"left": "19.Left.jpeg", "right": "19.Right.jpeg", "title": "Image 19",
      "diffs": [(288,40,20),(74,110,18),(174,210,18),(294,168,18),(50,200,16)]},
 
-    {"left": "20.Left.jpg", "right": "20.Right.jpg", "title": "Image 20",
+    {"left": "20.Left.jpeg", "right": "20.Right.jpeg", "title": "Image 20",
      "diffs": [(266,48,20),(88,118,18),(188,198,18),(308,164,16),(68,208,18)]},
 
     # ══════════════════════════════════════════════════════════════
     # MATCH 3 — Finale  (images 21–30)
     # ══════════════════════════════════════════════════════════════
-    {"left": "21.Left.jpg", "right": "21.Right.jpg", "title": "Image 21",
+    {"left": "21.Left.jpeg", "right": "21.Right.jpeg", "title": "Image 21",
      "diffs": [(274,44,20),(86,112,18),(172,202,18),(304,172,18),(60,196,16)]},
 
-    {"left": "22.Left.jpg", "right": "22.Right.jpg", "title": "Image 22",
+    {"left": "22.Left.jpeg", "right": "22.Right.jpeg", "title": "Image 22",
      "diffs": [(262,52,20),(92,128,18),(190,190,18),(312,158,16),(72,212,18)]},
 
-    {"left": "23.Left.jpg", "right": "23.Right.jpg", "title": "Image 23",
+    {"left": "23.Left.jpeg", "right": "23.Right.jpeg", "title": "Image 23",
      "diffs": [(284,38,20),(78,106,18),(168,208,18),(298,178,18),(56,202,16)]},
 
-    {"left": "24.Left.jpg", "right": "24.Right.jpg", "title": "Image 24",
+    {"left": "24.Left.jpeg", "right": "24.Right.jpeg", "title": "Image 24",
      "diffs": [(254,58,20),(98,130,18),(198,184,18),(318,152,16),(78,218,18)]},
 
-    {"left": "25.Left.jpg", "right": "25.Right.jpg", "title": "Image 25",
+    {"left": "25.Left.jpeg", "right": "25.Right.jpeg", "title": "Image 25",
      "diffs": [(279,42,20),(83,113,18),(173,203,18),(303,173,18),(59,197,16)]},
 
-    {"left": "26.Left.jpg", "right": "26.Right.jpg", "title": "Image 26",
+    {"left": "26.Left.jpeg", "right": "26.Right.jpeg", "title": "Image 26",
      "diffs": [(267,49,20),(89,119,18),(189,197,18),(309,163,16),(67,209,18)]},
 
-    {"left": "27.Left.jpg", "right": "27.Right.jpg", "title": "Image 27",
+    {"left": "27.Left.jpeg", "right": "27.Right.jpeg", "title": "Image 27",
      "diffs": [(283,41,20),(77,109,18),(177,207,18),(297,177,18),(55,199,16)]},
 
-    {"left": "28.Left.jpg", "right": "28.Right.jpg", "title": "Image 28",
+    {"left": "28.Left.jpeg", "right": "28.Right.jpeg", "title": "Image 28",
      "diffs": [(259,53,20),(91,125,18),(191,193,18),(311,161,16),(71,211,18)]},
 
-    {"left": "29.Left.jpg", "right": "29.Right.jpg", "title": "Image 29",
+    {"left": "29.Left.jpeg", "right": "29.Right.jpeg", "title": "Image 29",
      "diffs": [(271,43,20),(81,111,18),(181,201,18),(301,179,18),(61,201,16)]},
 
-    {"left": "30.Left.jpg", "right": "30.Right.jpg", "title": "Image 30",
+    {"left": "30.Left.jpeg", "right": "30.Right.jpeg", "title": "Image 30",
      "diffs": [(263,51,20),(93,127,18),(193,191,18),(313,157,16),(73,213,18)]},
 ]

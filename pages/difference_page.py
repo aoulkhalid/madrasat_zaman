@@ -82,6 +82,7 @@ class ImageCanvas(QLabel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._circles = []
+        self._original_size = None
         self.setAlignment(Qt.AlignCenter)
         self.setScaledContents(True)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -107,16 +108,21 @@ class ImageCanvas(QLabel):
         painter.setRenderHint(QPainter.Antialiasing)
         for cx, cy, r, color in self._circles:
             c = QColor(color)
+            if self._original_size:
+                scale_x = self.width() / self._original_size.width()
+                scale_y = self.height() / self._original_size.height()
+                cx = cx * scale_x
+                cy = cy * scale_y
             # Halo externe
             halo = QColor(c); halo.setAlpha(40)
             painter.setPen(Qt.NoPen)
             painter.setBrush(QBrush(halo))
-            painter.drawEllipse(QPoint(cx, cy), r + 18, r + 18)
+            painter.drawEllipse(QPoint(int(cx), int(cy)), r + 18, r + 18)
             # Cercle principal
             painter.setPen(QPen(c, 3))
             fill = QColor(c); fill.setAlpha(35)
             painter.setBrush(QBrush(fill))
-            painter.drawEllipse(QPoint(cx, cy), r + 12, r + 12)
+            painter.drawEllipse(QPoint(int(cx), int(cy)), r + 12, r + 12)
         painter.end()
 
 
@@ -284,6 +290,8 @@ class DifferencePage(BasePage):
         self._found_set     = set()
         self._answered      = False
         self._circles_right = []
+        self._blue_circles  = []
+        self._tries         = 0
 
     # ── Logique ───────────────────────────────────────────────────
     def on_show(self, **kwargs):
@@ -304,6 +312,8 @@ class DifferencePage(BasePage):
         self._found_set     = set()
         self._circles_right = []
         self._answered      = False
+        self._blue_circles  = []
+        self._tries         = 0
 
         diff = self._diffs[self._d_idx]
         team = self.mw.tc.current_team
@@ -315,7 +325,7 @@ class DifferencePage(BasePage):
         self._section_lbl.setText(
             f"Image {self._d_idx + 1} / {len(self._diffs)}  ·  Tour : {team.name}"
         )
-        self._count_lbl.setText(f"0 / {len(diff['diffs'])} trouvées")
+        self._count_lbl.setText(f"0 / 5 tries")
         self._count_lbl.setStyleSheet(f"color: {ACCENT_BLUE}; background: transparent;")
 
         def load_img(fname, widget):
@@ -324,9 +334,11 @@ class DifferencePage(BasePage):
             if pix.isNull():
                 widget.setPixmap(QPixmap())
                 widget.setText("Image manquante")
+                widget._original_size = None
             else:
                 widget.setPixmap(pix)
                 widget.setText("")
+                widget._original_size = pix.size()
 
         load_img(diff["left"],  self._cv_left)
         load_img(diff["right"], self._cv_right)
@@ -338,54 +350,75 @@ class DifferencePage(BasePage):
         self._timer.start()
 
     def _on_image_click(self, event):
-        if self._answered:
+        if self._tries >= 5 or self._answered:
             return
-        diff = self._diffs[self._d_idx]
         x, y = event.pos().x(), event.pos().y()
 
-        for i, (cx, cy, r) in enumerate(diff["diffs"]):
-            if i in self._found_set:
-                continue
-            if math.hypot(x - cx, y - cy) <= r + 22:
-                self._found_set.add(i)
-                team  = self.mw.tc.current_team
-                color = team.color
-                self._circles_right.append((cx, cy, r, color))
-                self._cv_left.set_circles(
-                    [(cx, cy, r, color) for cx, cy, r, color in self._circles_right])
-                self._cv_right.set_circles(self._circles_right)
-                pts = self.mw.tc.answer("diff", True)
-                self._update_scores(self._boxes)
-                n = len(diff["diffs"])
-                f = len(self._found_set)
-                self._count_lbl.setText(f"{f} / {n} trouvées")
-                if f == n:
-                    self._count_lbl.setStyleSheet(
-                        f"color: {C['success']}; background: transparent;")
-                    self._answered = True
-                    self._timer.stop()
-                self.mw.tc.next_turn()
-                self._refresh_team_banner()
-                _force_labels_blue(self._team_banner)
-                break
+        # Scale click coordinates to original image space
+        if self._cv_right._original_size:
+            scale_x = self._cv_right.width() / self._cv_right._original_size.width()
+            scale_y = self._cv_right.height() / self._cv_right._original_size.height()
+            orig_x = x / scale_x
+            orig_y = y / scale_y
+        else:
+            orig_x, orig_y = x, y
+
+        self._blue_circles.append((orig_x, orig_y))
+        self._tries += 1
+        self._count_lbl.setText(f"{self._tries} / 5 tries")
+
+        if self._tries == 5:
+            self._evaluate_tries()
+        else:
+            self._update_blue_circles()
+
+    def _update_blue_circles(self):
+        circles = []
+        for bx, by in self._blue_circles:
+            circles.append((bx, by, 0, "#4f8ef7"))  # blue points
+        self._cv_right.set_circles(circles)
+
+    def _evaluate_tries(self):
+        diff = self._diffs[self._d_idx]
+        evaluated = []
+        hits = 0
+        hit_diffs = set()  # Track which differences have been hit
+        for bx, by in self._blue_circles:
+            hit = False
+            for i, (cx, cy, r) in enumerate(diff["diffs"]):
+                if i not in hit_diffs and math.hypot(bx - cx, by - cy) <= r + 22:
+                    hit = True
+                    hits += 1
+                    hit_diffs.add(i)
+                    break
+            color = C["success"] if hit else C["error"]
+            evaluated.append((bx, by, 0, color))
+        self._cv_right.set_circles(evaluated)
+        # Show all true differences on left canvas
+        all_true = [(cx, cy, r, C["success"]) for cx, cy, r in diff["diffs"]]
+        self._cv_left.set_circles(all_true)
+        self._answered = True
+        self._timer.stop()
+        # Update score based on hits - 5 points per correct difference
+        for _ in range(hits):
+            pts = self.mw.tc.answer("diff", True)  # 5 points for each correct difference
+        self._update_scores(self._boxes)
+        # Switch to next team for next difference
+        self.mw.tc.next_turn()
+        self._refresh_team_banner()
+        _force_labels_blue(self._team_banner)
 
     def _reveal_all(self):
-        self._timer.stop()
-        self._answered = True
-        diff = self._diffs[self._d_idx]
-        all_circles = []
-        for i, (cx, cy, r) in enumerate(diff["diffs"]):
-            color = C["success"] if i in self._found_set else C["error"]
-            all_circles.append((cx, cy, r, color))
-        self._cv_left.set_circles(all_circles)
-        self._cv_right.set_circles(all_circles)
-        n = len(diff["diffs"])
-        self._count_lbl.setText(f"{len(self._found_set)} / {n} trouvées")
-        self._reveal_btn.setEnabled(False)
+        if not self._answered:
+            self._evaluate_tries()
 
     def _on_timeout(self):
         if not self._answered:
-            self._reveal_all()
+            if self._tries < 5:
+                # Fill remaining tries with dummy clicks or just evaluate current
+                self._evaluate_tries()
+            else:
+                self._evaluate_tries()
 
     def _next_diff(self):
         self._timer.stop()

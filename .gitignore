@@ -1,3 +1,9 @@
 venv/
 __pycache__/
 *.pyc
+<<<<<<< HEAD
+=======
+
+__pycache__/
+*.pyc
+>>>>>>> origin/feature/audio-manager

@@ -1,75 +1,5 @@
-"""
-games/logo_data.py — 60 challenges logos (20 par match)
-Format: { "name": str, "image": filename, "hint": str }
-Le présentateur affiche le logo et clique Bonne/Mauvaise réponse.
-"""
 ALL_LOGOS = [
-    # ── MATCH 1 (logos 1–20) ──────────────────────────────────────────────────
-    {"name": "AQUA", "image": "logo_01.png", "hint": "Marque d'eau minérale 💧"},
-    {"name": "VERDA", "image": "logo_02.png", "hint": "Marque écologique 🌿"},
-    {"name": "SOLARA", "image": "logo_03.png", "hint": "Énergie solaire ☀️"},
-    {"name": "NEXON", "image": "logo_04.png", "hint": "Technologie avancée ⚡"},
-    {"name": "FLORA", "image": "logo_05.png", "hint": "Produits naturels 🌸"},
-    {"name": "ORBITA", "image": "logo_06.png", "hint": "Transport & mobilité 🚀"},
-    {"name": "LUMINA", "image": "logo_07.png", "hint": "Éclairage & design 💡"},
-    {"name": "STRATOS", "image": "logo_08.png", "hint": "Aviation 🌤️"},
-    {"name": "VORTEX", "image": "logo_09.png", "hint": "Sport & performance 🌀"},
-    {"name": "CYPHA", "image": "logo_10.png", "hint": "Données & sécurité 🔐"},
-    {"name": "TEROVA", "image": "logo_11.png", "hint": "Immobilier 🏗️"},
-    {"name": "BLAZON", "image": "logo_12.png", "hint": "Mode & luxe 💎"},
-    {"name": "HELIX", "image": "logo_13.png", "hint": "Santé & pharmacie 🧬"},
-    {"name": "ARCTIS", "image": "logo_14.png", "hint": "Froid & logistique ❄️"},
-    {"name": "PYREX", "image": "logo_15.png", "hint": "Chimie & matériaux 🔬"},
-    {"name": "AMBIA", "image": "logo_16.png", "hint": "Sons & musique 🎵"},
-    {"name": "CRESPO", "image": "logo_17.png", "hint": "Alimentation 🍽️"},
-    {"name": "DURAZO", "image": "logo_18.png", "hint": "Outillage & BTP 🔧"},
-    {"name": "EKOVA", "image": "logo_19.png", "hint": "E-commerce 🛒"},
-    {"name": "FULCO", "image": "logo_20.png", "hint": "Finance & banque 💰"},
-
-    # ── MATCH 2 (logos 21–40) ─────────────────────────────────────────────────
-    {"name": "GLYCO", "image": "logo_21.png", "hint": "Boissons 🥤"},
-    {"name": "HYDRA", "image": "logo_22.png", "hint": "Sports aquatiques 🌊"},
-    {"name": "INOVA", "image": "logo_23.png", "hint": "Innovation ⚙️"},
-    {"name": "JETTO", "image": "logo_24.png", "hint": "Livraison express 📦"},
-    {"name": "KINOS", "image": "logo_25.png", "hint": "Cinéma & divertissement 🎬"},
-    {"name": "LENZO", "image": "logo_26.png", "hint": "Optique 👁️"},
-    {"name": "MARVEX", "image": "logo_27.png", "hint": "Automobile 🚗"},
-    {"name": "NOBILE", "image": "logo_28.png", "hint": "Hôtellerie 🏨"},
-    {"name": "OPULEN", "image": "logo_29.png", "hint": "Joaillerie 💍"},
-    {"name": "PAXTON", "image": "logo_30.png", "hint": "Sécurité & surveillance 🔒"},
-    {"name": "QUALIA", "image": "logo_31.png", "hint": "Design intérieur 🏠"},
-    {"name": "RAPTIX", "image": "logo_32.png", "hint": "Jeux vidéo 🎮"},
-    {"name": "SOLENO", "image": "logo_33.png", "hint": "Agriculture 🌾"},
-    {"name": "TEKLOW", "image": "logo_34.png", "hint": "Informatique 💻"},
-    {"name": "UVANTA", "image": "logo_35.png", "hint": "Cosmétiques 💄"},
-    {"name": "VESTRO", "image": "logo_36.png", "hint": "Textile & mode 👗"},
-    {"name": "WAXON", "image": "logo_37.png", "hint": "Automobile & entretien 🚙"},
-    {"name": "XPERIA", "image": "logo_38.png", "hint": "Électronique 📱"},
-    {"name": "YARDON", "image": "logo_39.png", "hint": "Jardinage 🌻"},
-    {"name": "ZEPHYR", "image": "logo_40.png", "hint": "Ventilation & climatisation 🌬️"},
-
-    # ── MATCH 3 — Finale (logos 41–60) ───────────────────────────────────────
-    {"name": "ALPHACORE", "image": "logo_41.png", "hint": "Technologie IA 🤖"},
-    {"name": "BRIGHTCO", "image": "logo_42.png", "hint": "Énergie propre ♻️"},
-    {"name": "CHROMEX", "image": "logo_43.png", "hint": "Peinture & revêtements 🎨"},
-    {"name": "DYNAMO", "image": "logo_44.png", "hint": "Sport extrême ⚡"},
-    {"name": "ENTERRA", "image": "logo_45.png", "hint": "Mines & ressources ⛏️"},
-    {"name": "FERVEX", "image": "logo_46.png", "hint": "Pharmacie 💊"},
-    {"name": "GRADUS", "image": "logo_47.png", "hint": "Éducation 🎓"},
-    {"name": "HARMONA", "image": "logo_48.png", "hint": "Bien-être & spa 🧘"},
-    {"name": "ICEFLOW", "image": "logo_49.png", "hint": "Boissons fraîches 🧊"},
-    {"name": "JETMODE", "image": "logo_50.png", "hint": "Mode & tendance 👔"},
-    {"name": "KINGVEX", "image": "logo_51.png", "hint": "Royalties & licences 👑"},
-    {"name": "LIFTMAX", "image": "logo_52.png", "hint": "Ascenseurs & BTP 🏗️"},
-    {"name": "MEDOVA", "image": "logo_53.png", "hint": "Médecine & clinique 🏥"},
-    {"name": "NORTECH", "image": "logo_54.png", "hint": "Industrie nordique ❄️"},
-    {"name": "OPTIVEX", "image": "logo_55.png", "hint": "Optique de précision 🔭"},
-    {"name": "PROXIMA", "image": "logo_56.png", "hint": "Réseau & télécoms 📡"},
-    {"name": "QUANTUM", "image": "logo_57.png", "hint": "Informatique quantique 🔬"},
-    {"name": "RADIUM", "image": "logo_58.png", "hint": "Énergie nucléaire ☢️"},
-    {"name": "SYNCORE", "image": "logo_59.png", "hint": "Logiciels & SaaS 🖥️"},
-    {"name": "TRITON", "image": "logo_60.png", "hint": "Marine & nautisme ⚓"},
-    # ── MATCH 4 — Finale (logos 1–20) ───────────────────────────────────────
+    # ── MATCH 1 (logos 1–40) ──────────────────────────────────────────────────
     {"name": "Formula 1", "image": "1.png", "hint": "Sport automobile 🏎️"},
     {"name": "Liverpool FC", "image": "2.png", "hint": "Club de football anglais ⚽"},
     {"name": "Nike", "image": "3.png", "hint": "Équipement sportif 👟"},
@@ -90,7 +20,7 @@ ALL_LOGOS = [
     {"name": "Spotify", "image": "18.png", "hint": "Streaming musical 🎧"},
     {"name": "Škoda", "image": "19.png", "hint": "Constructeur automobile 🚘"},
     {"name": "Claude IA", "image": "20.png", "hint": "Intelligence artificielle 🤖"},
-    # ── MATCH 5 — Finale (logos 21–40) ───────────────────────────────────────
+
     {"name": "HTML5", "image": "21.png", "hint": "Langage du web 🌐"},
     {"name": "Suzuki", "image": "22.png", "hint": "Automobile & moto 🏍️"},
     {"name": "Mercedes-Benz", "image": "23.png", "hint": "Voiture premium ⭐"},
@@ -111,8 +41,10 @@ ALL_LOGOS = [
     {"name": "Cisco Systems", "image": "37.png", "hint": "Réseaux informatiques 🌐"},
     {"name": "Starbucks", "image": "38.png", "hint": "Café & boissons ☕"},
     {"name": "Mastercard", "image": "39.png", "hint": "Paiement bancaire 💳"},
-    {"name": "La Vache qui rit", "image": "40.png", "hint": "Fromage 🧀"},
-    # ── MATCH 7 — Finale (logos 41–60) ───────────────────────────────────────
+    {"name": "La Vache qui rit", "image": "40.png", "hint": "Fromage 🧀"},    
+
+
+    # ── MATCH 2 (logos 41–80) ─────────────────────────────────────────────────
     {"name": "Golden", "image": "41.png", "hint": "Marque alimentaire 🍪"},
     {"name": "Amazon", "image": "42.png", "hint": "E-commerce 📦"},
     {"name": "Nestlé", "image": "43.png", "hint": "Agroalimentaire 🐦"},
@@ -134,8 +66,8 @@ ALL_LOGOS = [
     {"name": "Kappa", "image": "58.png", "hint": "Marque sportive 👕"},
     {"name": "JavaScript", "image": "59.png", "hint": "Langage web 📜"},
     {"name": "Red Bull", "image": "60.png", "hint": "Boisson énergétique 🥤"},
-    # ── MATCH 8 — Finale (logos 61–80) ───────────────────────────────────────
-    {"name": "Jarritos", "image": "61.png", "hint": "Boisson mexicaine 🥤"},
+
+     {"name": "Jarritos", "image": "61.png", "hint": "Boisson mexicaine 🥤"},
     {"name": "Ferrari", "image": "62.png", "hint": "Voiture de sport 🐎"},
     {"name": "Audi", "image": "63.png", "hint": "Constructeur automobile 🚘"},
     {"name": "New York Yankees", "image": "64.png", "hint": "Équipe de baseball ⚾"},
@@ -156,7 +88,9 @@ ALL_LOGOS = [
     {"name": "MrBeast", "image": "78.png", "hint": "Créateur YouTube 🎥"},
     {"name": "Subaru", "image": "79.png", "hint": "Automobile japonaise 🚗"},
     {"name": "PostgreSQL", "image": "80.png", "hint": "Base de données 🐘"},
-    # ── MATCH 9 — Finale (logos 81–100) ───────────────────────────────────────
+
+    # ── MATCH 3 — Finale (logos 81–120) ───────────────────────────────────────
+    
     {"name": "Oracle", "image": "81.png", "hint": "Logiciels & bases de données 🗄️"},
     {"name": "Max Havelaar", "image": "82.png", "hint": "Commerce équitable 🌍"},
     {"name": "BSNL", "image": "83.png", "hint": "Télécommunications 📶"},
@@ -178,7 +112,7 @@ ALL_LOGOS = [
     {"name": "Versace", "image": "98.png", "hint": "Mode de luxe 🐍"},
     {"name": "Healthgrades", "image": "99.png", "hint": "Santé & soins ❤️"},
     {"name": "Calèche", "image": "100.png", "hint": "Transport ancien 🐎"},
-    # ── MATCH 10 — Finale (logos 101–120) ───────────────────────────────────────
+    
     {"name": "Node.js", "image": "101.png", "hint": "JavaScript côté serveur 🟢"},
     {"name": "Mitsubishi", "image": "102.png", "hint": "Constructeur automobile 🚗"},
 
@@ -203,5 +137,4 @@ ALL_LOGOS = [
     {"name": "Newcastle United", "image": "121.png", "hint": "Club de football anglais ⚽"},
     {"name": "Lexus", "image": "123.png", "hint": "Voiture premium 🚘"},
     {"name": "Transavia", "image": "124.png", "hint": "Compagnie aérienne ✈️"},
-]
 ]

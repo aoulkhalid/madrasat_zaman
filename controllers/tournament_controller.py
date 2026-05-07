@@ -88,11 +88,11 @@ class TournamentController(QObject):
         return ALL_QUESTIONS[start:start + 20]
 
     def get_logo_slice(self):
-        """Retourne les 20 logos du match actuel."""
+        """Retourne les 40 logos du match actuel."""
         from games.logo_data import ALL_LOGOS
         idx   = self.tournament.current_match_idx
-        start = idx * 20
-        return ALL_LOGOS[start:start + 20]
+        start = idx * 40
+        return ALL_LOGOS[start:start + 40]
 
     def get_diff_slice(self):
         """Retourne les 10 paires du match actuel."""

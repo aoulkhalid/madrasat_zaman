@@ -3,6 +3,7 @@ pages/difference_page.py — Difference Game
 Même style moderne que quiz/logo page — fond image, tout transparent, noms bleus
 Images maximisées pour bien voir les différences
 """
+from audio.manager import AudioManager
 import os, math, re
 from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
                               QPushButton, QFrame, QSizePolicy, QWidget)
@@ -198,6 +199,7 @@ class DifferencePage(BasePage):
         self._timer = CircularTimer(duration=TIMER_DURATION, size=88)
         self._timer.timeout.connect(self._on_timeout)
         self._boxes = self._build_scoreboard(self._timer)
+        from audio.manager import AudioManager
         for i in range(self._root_layout.count()):
             item = self._root_layout.itemAt(i)
             if item and item.widget():
@@ -348,6 +350,9 @@ class DifferencePage(BasePage):
 
         self._timer.reset(TIMER_DURATION)
         self._timer.start()
+        self._audio.stop()
+        self._audio.play("tension")
+
 
     def _on_image_click(self, event):
         if self._tries >= 5 or self._answered:
@@ -399,6 +404,7 @@ class DifferencePage(BasePage):
         self._cv_left.set_circles(all_true)
         self._answered = True
         self._timer.stop()
+        self._audio.stop()
         # Update score based on hits - 5 points per correct difference
         for _ in range(hits):
             pts = self.mw.tc.answer("diff", True)  # 5 points for each correct difference
@@ -414,6 +420,7 @@ class DifferencePage(BasePage):
 
     def _on_timeout(self):
         if not self._answered:
+            self._audio.stop()
             if self._tries < 5:
                 # Fill remaining tries with dummy clicks or just evaluate current
                 self._evaluate_tries()

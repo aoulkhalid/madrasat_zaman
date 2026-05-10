@@ -108,21 +108,28 @@ class ImageCanvas(QLabel):
         painter.setRenderHint(QPainter.Antialiasing)
         for cx, cy, r, color in self._circles:
             c = QColor(color)
-            if self._original_size:
-                scale_x = self.width() / self._original_size.width()
-                scale_y = self.height() / self._original_size.height()
-                cx = cx * scale_x
-                cy = cy * scale_y
+            rx, ry = int(r), int(r)
+            if self._original_size and self._original_size.width() and self._original_size.height():
+                if 0 <= cx <= 1 and 0 <= cy <= 1:
+                    cx = cx * self.width()
+                    cy = cy * self.height()
+                else:
+                    scale_x = self.width() / self._original_size.width()
+                    scale_y = self.height() / self._original_size.height()
+                    cx = cx * scale_x
+                    cy = cy * scale_y
+                rx = int(r * self.width() / self._original_size.width())
+                ry = int(r * self.height() / self._original_size.height())
             # Halo externe
             halo = QColor(c); halo.setAlpha(40)
             painter.setPen(Qt.NoPen)
             painter.setBrush(QBrush(halo))
-            painter.drawEllipse(QPoint(int(cx), int(cy)), r + 18, r + 18)
+            painter.drawEllipse(QPoint(int(cx), int(cy)), rx + 18, ry + 18)
             # Cercle principal
             painter.setPen(QPen(c, 3))
             fill = QColor(c); fill.setAlpha(35)
             painter.setBrush(QBrush(fill))
-            painter.drawEllipse(QPoint(int(cx), int(cy)), r + 12, r + 12)
+            painter.drawEllipse(QPoint(int(cx), int(cy)), rx + 12, ry + 12)
         painter.end()
 
 
@@ -386,6 +393,9 @@ class DifferencePage(BasePage):
         for bx, by in self._blue_circles:
             hit = False
             for i, (cx, cy, r) in enumerate(diff["diffs"]):
+                if self._cv_right._original_size and 0 <= cx <= 1 and 0 <= cy <= 1:
+                    cx = cx * self._cv_right._original_size.width()
+                    cy = cy * self._cv_right._original_size.height()
                 if i not in hit_diffs and math.hypot(bx - cx, by - cy) <= r + 22:
                     hit = True
                     hits += 1

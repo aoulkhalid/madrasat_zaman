@@ -1,9 +1,8 @@
 """
 pages/difference_page.py — Difference Game
-Même style moderne que quiz/logo page — fond image, tout transparent, noms bleus
-Images maximisées pour bien voir les différences
+Même logique originale (5 essais, évaluation groupée, scaling coordonnées)
++ Timer synchronisé + auto-avance 2s après résultats
 """
-from audio.manager import AudioManager
 import os, math, re
 from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
                               QPushButton, QFrame, QSizePolicy, QWidget)
@@ -23,6 +22,9 @@ ACCENT_PURPLE = "#a855f7"
 BLUE_NAME     = "#4f8ef7"
 TEXT_MUTED    = "rgba(255,255,255,180)"
 _TRANSPARENT  = "background: transparent; border: none; background-color: transparent;"
+
+# Délai (ms) avant passage automatique à l'image suivante après résultats
+AUTO_ADVANCE_MS = 2000
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -94,8 +96,6 @@ class ImageCanvas(QLabel):
             "border: 2px solid rgba(79,142,247,80);"
             "padding: 0px;"
         )
-
-
 
     def set_circles(self, circles):
         self._circles = circles
@@ -206,7 +206,6 @@ class DifferencePage(BasePage):
         self._timer = CircularTimer(duration=TIMER_DURATION, size=88)
         self._timer.timeout.connect(self._on_timeout)
         self._boxes = self._build_scoreboard(self._timer)
-        from audio.manager import AudioManager
         for i in range(self._root_layout.count()):
             item = self._root_layout.itemAt(i)
             if item and item.widget():
@@ -225,7 +224,7 @@ class DifferencePage(BasePage):
         self._section_lbl.setFont(QFont("Segoe UI", 11))
         self._section_lbl.setStyleSheet(f"color: {TEXT_MUTED}; background: transparent;")
 
-        self._count_lbl = QLabel("0 / 5 trouvées")
+        self._count_lbl = QLabel("0 / 5 tries")
         self._count_lbl.setFont(QFont("Segoe UI", 12, QFont.Bold))
         self._count_lbl.setStyleSheet(f"color: {ACCENT_BLUE}; background: transparent;")
 
@@ -235,7 +234,7 @@ class DifferencePage(BasePage):
 
         # ── Zone images — prend tout l'espace disponible ──────────
         images_wrap = QFrame()
-        images_wrap.setStyleSheet("background: black; border: solid black 5px;")
+        images_wrap.setStyleSheet("background: transparent; border: none;")
         images_wrap.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         images_v = QVBoxLayout(images_wrap)
         images_v.setContentsMargins(28, 2, 28, 2)
@@ -260,11 +259,6 @@ class DifferencePage(BasePage):
         self._cv_right = ImageCanvas()
         self._cv_right.setCursor(Qt.CrossCursor)
         self._cv_right.mousePressEvent = self._on_image_click
-
-        w = self._cv_left.width()
-        h = self._cv_left.height()
-
-        print(w, h)
 
         canvas_row.addWidget(self._cv_left,  1)
         canvas_row.addWidget(self._cv_right, 1)
@@ -293,11 +287,17 @@ class DifferencePage(BasePage):
         btn_row.addWidget(self._next_btn)
         self._root_layout.addLayout(btn_row)
 
-        # État
+        # ── Timer d'auto-avance (unique, singleShot) ──────────────
+        # Règle PyQt5 : un seul QTimer partagé, toujours stop() avant start()
+        self._advance_timer = QTimer(self)
+        self._advance_timer.setSingleShot(True)
+        self._advance_timer.timeout.connect(self._advance_to_next)
+
+        # ── État ──────────────────────────────────────────────────
         self._diffs         = []
         self._d_idx         = 0
         self._found_set     = set()
-        self._answered      = False
+        self._answered      = False   # verrou : True dès que résultats affichés
         self._circles_right = []
         self._blue_circles  = []
         self._tries         = 0
@@ -318,6 +318,10 @@ class DifferencePage(BasePage):
             self.mw.show_page("menu")
             return
 
+        # ── 1. Stopper tous les timers AVANT tout reset ───────────
+        self._stop_all_timers()
+
+        # ── 2. Réinitialiser l'état ───────────────────────────────
         self._found_set     = set()
         self._circles_right = []
         self._answered      = False
@@ -334,7 +338,7 @@ class DifferencePage(BasePage):
         self._section_lbl.setText(
             f"Image {self._d_idx + 1} / {len(self._diffs)}  ·  Tour : {team.name}"
         )
-        self._count_lbl.setText(f"0 / 5 tries")
+        self._count_lbl.setText("0 / 5 tries")
         self._count_lbl.setStyleSheet(f"color: {ACCENT_BLUE}; background: transparent;")
 
         def load_img(fname, widget):
@@ -353,20 +357,23 @@ class DifferencePage(BasePage):
         load_img(diff["right"], self._cv_right)
         self._cv_left.set_circles([])
         self._cv_right.set_circles([])
-        self._reveal_btn.setEnabled(True)
 
+        # ── 3. Réactiver les boutons ──────────────────────────────
+        self._reveal_btn.setEnabled(True)
+        self._next_btn.setEnabled(True)
+
+        # ── 4. Démarrer le chronomètre (reset PUIS start) ─────────
         self._timer.reset(TIMER_DURATION)
         self._timer.start()
-        self._audio.stop()
-        self._audio.play("tension")
 
+        self.mw.audio.play("tension")
 
     def _on_image_click(self, event):
         if self._tries >= 5 or self._answered:
             return
         x, y = event.pos().x(), event.pos().y()
 
-        # Scale click coordinates to original image space
+        # Convertir les coordonnées widget → espace image original
         if self._cv_right._original_size:
             scale_x = self._cv_right.width() / self._cv_right._original_size.width()
             scale_y = self._cv_right.height() / self._cv_right._original_size.height()
@@ -385,19 +392,31 @@ class DifferencePage(BasePage):
             self._update_blue_circles()
 
     def _update_blue_circles(self):
-        circles = []
-        for bx, by in self._blue_circles:
-            circles.append((bx, by, 0, "#4f8ef7"))  # blue points
+        circles = [(bx, by, 0, "#4f8ef7") for bx, by in self._blue_circles]
         self._cv_right.set_circles(circles)
 
     def _evaluate_tries(self):
+        """
+        Point d'entrée unique pour afficher les résultats.
+        Verrou _answered : n'est exécuté qu'une seule fois par image.
+        """
+        if self._answered:
+            return
+        self._answered = True
+
+        # Stopper le chrono dès l'évaluation
+        self._stop_all_timers()
+        self.mw.audio.stop()
+
         diff = self._diffs[self._d_idx]
         evaluated = []
         hits = 0
-        hit_diffs = set()  # Track which differences have been hit
+        hit_diffs = set()
+
         for bx, by in self._blue_circles:
             hit = False
             for i, (cx, cy, r) in enumerate(diff["diffs"]):
+                # Supporter coordonnées normalisées (0–1) ou pixels
                 if self._cv_right._original_size and 0 <= cx <= 1 and 0 <= cy <= 1:
                     cx = cx * self._cv_right._original_size.width()
                     cy = cy * self._cv_right._original_size.height()
@@ -408,39 +427,67 @@ class DifferencePage(BasePage):
                     break
             color = C["success"] if hit else C["error"]
             evaluated.append((bx, by, 0, color))
+
         self._cv_right.set_circles(evaluated)
-        # Show all true differences on left canvas
+        # Toutes les vraies différences sur le canvas gauche
         all_true = [(cx, cy, r, C["success"]) for cx, cy, r in diff["diffs"]]
         self._cv_left.set_circles(all_true)
-        self._answered = True
-        self._timer.stop()
-        self._audio.stop()
-        # Update score based on hits - 5 points per correct difference
+
+        # Créditer les points
         for _ in range(hits):
-            pts = self.mw.tc.answer("diff", True)  # 5 points for each correct difference
+            self.mw.tc.answer("diff", True)
         self._update_scores(self._boxes)
-        # Switch to next team for next difference
+
+        # Changer de tour
         self.mw.tc.next_turn()
         self._refresh_team_banner()
         _force_labels_blue(self._team_banner)
 
+        # Désactiver les boutons pendant la phase résultats
+        self._reveal_btn.setEnabled(False)
+        self._next_btn.setEnabled(False)
+
+        # Planifier l'auto-avance (stop() avant start() : règle PyQt5)
+        self._advance_timer.stop()
+        self._advance_timer.start(AUTO_ADVANCE_MS)
+
     def _reveal_all(self):
+        """Bouton 'Voir toutes les réponses' → évaluation immédiate."""
         if not self._answered:
             self._evaluate_tries()
 
     def _on_timeout(self):
+        """Le décompte est arrivé à zéro → forcer l'évaluation."""
         if not self._answered:
-            self._audio.stop()
-            if self._tries < 5:
-                # Fill remaining tries with dummy clicks or just evaluate current
-                self._evaluate_tries()
-            else:
-                self._evaluate_tries()
+            self._evaluate_tries()
 
-    def _next_diff(self):
-        self._timer.stop()
+    def _advance_to_next(self):
+        """
+        Déclenché par _advance_timer après AUTO_ADVANCE_MS.
+        Passe à l'image suivante.
+        """
         self._d_idx += 1
         self._load_diff()
+
+    def _next_diff(self):
+        """
+        Bouton 'Image suivante' → annule l'auto-avance si planifiée
+        et charge immédiatement l'image suivante.
+        """
+        # Annuler le passage automatique en cours si présent
+        self._advance_timer.stop()
+        self._d_idx += 1
+        self._load_diff()
+
+    # ── Utilitaires ───────────────────────────────────────────────
+    def _stop_all_timers(self):
+        """
+        Stoppe proprement TOUS les timers de la page.
+        Toujours appelé avant tout reset() ou start() pour éviter
+        plusieurs timers actifs en parallèle.
+        """
+        self._timer.stop()           # CircularTimer (décompte visuel)
+        self._advance_timer.stop()   # QTimer d'auto-avance
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

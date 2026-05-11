@@ -1,37 +1,33 @@
 """
 pages/difference_page.py — Difference Game
-<<<<<<< HEAD
-Timer synchronisé — gestion propre QTimer — auto-avance après résultats
-=======
 Même logique originale (5 essais, évaluation groupée, scaling coordonnées)
 + Timer synchronisé + auto-avance 2s après résultats
->>>>>>> test-integration
 """
 import os, math, re
 from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
                               QPushButton, QFrame, QSizePolicy, QWidget)
-from PyQt5.QtCore    import Qt, QPoint, QTimer
+from PyQt5.QtCore    import Qt, QPoint, QTimer, QRect
 from PyQt5.QtGui     import (QFont, QPixmap, QPainter, QPen, QColor,
                               QBrush, QLinearGradient, QPainterPath)
 from pages.base_page import BasePage
 from widgets.circular_timer import CircularTimer
-from config import C, TIMER_DURATION, DIFF_DIR
+from config import C, TIMER_DURATION, POINTS_CORRECT, DIFF_DIR
+
 
 BG_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "images", "background2.png")
 
-ACCENT_BLUE  = "#4f8ef7"
-BLUE_NAME    = "#4f8ef7"
-TEXT_MUTED   = "rgba(255,255,255,180)"
-_TRANSPARENT = "background: transparent; border: none; background-color: transparent;"
-
-# Délai (ms) avant de passer automatiquement à l'image suivante
-AUTO_ADVANCE_MS = 2000
+# ── Palette ────────────────────────────────────────────────────────────────────
+ACCENT_BLUE   = "#4f8ef7"
+ACCENT_PURPLE = "#a855f7"
+BLUE_NAME     = "#4f8ef7"
+TEXT_MUTED    = "rgba(255,255,255,180)"
+_TRANSPARENT  = "background: transparent; border: none; background-color: transparent;"
 
 # Délai (ms) avant passage automatique à l'image suivante après résultats
 AUTO_ADVANCE_MS = 2000
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ── Helpers ────────────────────────────────────────────────────────────────────
 def _make_transparent(widget):
     widget.setStyleSheet(_TRANSPARENT)
     widget.setAttribute(Qt.WA_TranslucentBackground, True)
@@ -65,7 +61,8 @@ class _Background(QWidget):
         w, h = self.width(), self.height()
         if not self._bg_pixmap.isNull():
             p.drawPixmap(0, 0,
-                self._bg_pixmap.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
+                self._bg_pixmap.scaled(w, h,
+                    Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
         else:
             grad = QLinearGradient(0, 0, 0, h)
             grad.setColorAt(0.0, QColor("#dde6ed"))
@@ -81,14 +78,14 @@ class _Background(QWidget):
         p.drawLine(0, 2, w, 2)
 
 
-# ── Canvas image ──────────────────────────────────────────────────────────────
+# ── Canvas image avec cercles superposés ──────────────────────────────────────
 class ImageCanvas(QLabel):
-    """QLabel avec superposition de cercles, coordonnées scalées automatiquement."""
+    """QLabel avec superposition de cercles de différences — style moderne."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._circles       = []      # [(orig_x, orig_y, r, color), ...]
-        self._original_size = None    # QSize de l'image source
+        self._circles = []
+        self._original_size = None
         self.setAlignment(Qt.AlignCenter)
         self.setScaledContents(True)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -97,39 +94,12 @@ class ImageCanvas(QLabel):
             "background: rgba(255,255,255,215);"
             "border-radius: 18px;"
             "border: 2px solid rgba(79,142,247,80);"
+            "padding: 0px;"
         )
 
-<<<<<<< HEAD
-    def set_image(self, path: str):
-        """Charge une image et mémorise sa taille originale pour le scaling."""
-        pix = QPixmap(path)
-        if pix.isNull():
-            self.setPixmap(QPixmap())
-            self.setText("Image manquante")
-            self._original_size = None
-        else:
-            self.setPixmap(pix)
-            self.setText("")
-            self._original_size = pix.size()
-
-=======
->>>>>>> test-integration
     def set_circles(self, circles):
-        """circles = [(orig_x, orig_y, r, color), ...]"""
-        self._circles = list(circles)
+        self._circles = circles
         self.update()
-
-    def clear_circles(self):
-        self._circles = []
-        self.update()
-
-    def _to_widget_coords(self, ox, oy):
-        """Coordonnées image originale → coordonnées widget affiché."""
-        if self._original_size and self._original_size.width() > 0:
-            sx = self.width()  / self._original_size.width()
-            sy = self.height() / self._original_size.height()
-            return int(ox * sx), int(oy * sy)
-        return int(ox), int(oy)
 
     def paintEvent(self, event):
         super().paintEvent(event)
@@ -137,19 +107,8 @@ class ImageCanvas(QLabel):
             return
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        for ox, oy, r, color in self._circles:
-            wx, wy = self._to_widget_coords(ox, oy)
+        for cx, cy, r, color in self._circles:
             c = QColor(color)
-<<<<<<< HEAD
-            halo = QColor(c); halo.setAlpha(40)
-            painter.setPen(Qt.NoPen)
-            painter.setBrush(QBrush(halo))
-            painter.drawEllipse(QPoint(wx, wy), r + 18, r + 18)
-            painter.setPen(QPen(c, 3))
-            fill = QColor(c); fill.setAlpha(35)
-            painter.setBrush(QBrush(fill))
-            painter.drawEllipse(QPoint(wx, wy), r + 12, r + 12)
-=======
             rx, ry = int(r), int(r)
             if self._original_size and self._original_size.width() and self._original_size.height():
                 if 0 <= cx <= 1 and 0 <= cy <= 1:
@@ -172,11 +131,10 @@ class ImageCanvas(QLabel):
             fill = QColor(c); fill.setAlpha(35)
             painter.setBrush(QBrush(fill))
             painter.drawEllipse(QPoint(int(cx), int(cy)), rx + 12, ry + 12)
->>>>>>> test-integration
         painter.end()
 
 
-# ── Bouton action ─────────────────────────────────────────────────────────────
+# ── Bouton action moderne ──────────────────────────────────────────────────────
 class _ActionButton(QPushButton):
     def __init__(self, label: str, icon: str, color: str, bg_color: str):
         super().__init__()
@@ -193,19 +151,21 @@ class _ActionButton(QPushButton):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
         r = self.rect()
+        radius = 14
         alpha = 255 if (self.underMouse() and self.isEnabled()) else 220
         if not self.isEnabled():
             alpha = 90
         fill = QColor(self._bg_color); fill.setAlpha(alpha)
         path = QPainterPath()
-        path.addRoundedRect(0, 0, r.width(), r.height(), 14, 14)
+        path.addRoundedRect(0, 0, r.width(), r.height(), radius, radius)
         p.fillPath(path, QBrush(fill))
-        bc = QColor(self._color)
-        if not self.isEnabled(): bc.setAlpha(80)
-        p.setPen(QPen(bc, 2)); p.setBrush(Qt.NoBrush)
-        p.drawRoundedRect(1, 1, r.width()-2, r.height()-2, 14, 14)
-        tc = QColor("#ffffff") if self.isEnabled() else QColor(180, 180, 180, 100)
-        p.setPen(QPen(tc))
+        border_c = QColor(self._color)
+        if not self.isEnabled(): border_c.setAlpha(80)
+        p.setPen(QPen(border_c, 2))
+        p.setBrush(Qt.NoBrush)
+        p.drawRoundedRect(1, 1, r.width()-2, r.height()-2, radius, radius)
+        text_c = QColor("#ffffff") if self.isEnabled() else QColor(180, 180, 180, 100)
+        p.setPen(QPen(text_c))
         p.setFont(QFont("Segoe UI", 14, QFont.Bold))
         p.drawText(r, Qt.AlignCenter, f"{self._icon}  {self._label}")
 
@@ -213,7 +173,7 @@ class _ActionButton(QPushButton):
     def leaveEvent(self, e): super().leaveEvent(e); self.update()
 
 
-# ── Page principale ───────────────────────────────────────────────────────────
+# ── Page principale ────────────────────────────────────────────────────────────
 class DifferencePage(BasePage):
 
     def _build_page(self):
@@ -231,20 +191,20 @@ class DifferencePage(BasePage):
         container.setStyleSheet("background: transparent;")
         layout.addWidget(container)
 
-        # Header
+        # ── Header ────────────────────────────────────────────────
         hdr = self._add_header(show_back=True)
         hdr.set_center("DIFFERENCE GAME")
         _make_transparent(hdr)
         _force_labels_blue(hdr)
 
-        # Bandeau équipe
+        # ── Bandeau équipe ────────────────────────────────────────
         self._team_banner = self._add_team_banner()
         _make_transparent(self._team_banner)
         _force_labels_blue(self._team_banner)
 
-        # Timer circulaire + scoreboard
+        # ── Timer + Scoreboard ────────────────────────────────────
         self._timer = CircularTimer(duration=TIMER_DURATION, size=88)
-        self._timer.timeout.connect(self._on_countdown_finished)
+        self._timer.timeout.connect(self._on_timeout)
         self._boxes = self._build_scoreboard(self._timer)
         for i in range(self._root_layout.count()):
             item = self._root_layout.itemAt(i)
@@ -254,7 +214,7 @@ class DifferencePage(BasePage):
                     _make_transparent(w)
                     _force_labels_blue(w)
 
-        # Infos
+        # ── Infos section + compteur ──────────────────────────────
         info_row = QHBoxLayout()
         info_row.setAlignment(Qt.AlignCenter)
         info_row.setSpacing(30)
@@ -264,11 +224,7 @@ class DifferencePage(BasePage):
         self._section_lbl.setFont(QFont("Segoe UI", 11))
         self._section_lbl.setStyleSheet(f"color: {TEXT_MUTED}; background: transparent;")
 
-<<<<<<< HEAD
-        self._count_lbl = QLabel("0 / 5 essais")
-=======
         self._count_lbl = QLabel("0 / 5 tries")
->>>>>>> test-integration
         self._count_lbl.setFont(QFont("Segoe UI", 12, QFont.Bold))
         self._count_lbl.setStyleSheet(f"color: {ACCENT_BLUE}; background: transparent;")
 
@@ -276,7 +232,7 @@ class DifferencePage(BasePage):
         info_row.addWidget(self._count_lbl)
         self._root_layout.addLayout(info_row)
 
-        # Zone images
+        # ── Zone images — prend tout l'espace disponible ──────────
         images_wrap = QFrame()
         images_wrap.setStyleSheet("background: transparent; border: none;")
         images_wrap.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -284,6 +240,7 @@ class DifferencePage(BasePage):
         images_v.setContentsMargins(28, 2, 28, 2)
         images_v.setSpacing(6)
 
+        # Labels
         lbl_row = QHBoxLayout()
         lbl_row.setSpacing(16)
         for txt in ("Image originale", "Image modifiée  —  cliquez pour trouver"):
@@ -294,22 +251,22 @@ class DifferencePage(BasePage):
             lbl_row.addWidget(lbl, 1)
         images_v.addLayout(lbl_row)
 
+        # Canvas côte à côte
         canvas_row = QHBoxLayout()
         canvas_row.setSpacing(16)
+
         self._cv_left  = ImageCanvas()
         self._cv_right = ImageCanvas()
         self._cv_right.setCursor(Qt.CrossCursor)
         self._cv_right.mousePressEvent = self._on_image_click
-<<<<<<< HEAD
-=======
 
->>>>>>> test-integration
         canvas_row.addWidget(self._cv_left,  1)
         canvas_row.addWidget(self._cv_right, 1)
         images_v.addLayout(canvas_row, stretch=1)
+
         self._root_layout.addWidget(images_wrap, stretch=1)
 
-        # Boutons
+        # ── Boutons ───────────────────────────────────────────────
         btn_row = QHBoxLayout()
         btn_row.setContentsMargins(28, 4, 28, 8)
         btn_row.setSpacing(16)
@@ -318,42 +275,24 @@ class DifferencePage(BasePage):
             "VOIR TOUTES LES RÉPONSES", "👁",
             color="#6b7280", bg_color="#6b7280"
         )
-        self._reveal_btn.clicked.connect(self._on_reveal_clicked)
+        self._reveal_btn.clicked.connect(self._reveal_all)
 
         self._next_btn = _ActionButton(
             "IMAGE SUIVANTE", "→",
             color=C["success"], bg_color=C["success"]
         )
-        self._next_btn.clicked.connect(self._on_next_clicked)
+        self._next_btn.clicked.connect(self._next_diff)
 
         btn_row.addWidget(self._reveal_btn)
         btn_row.addWidget(self._next_btn)
         self._root_layout.addLayout(btn_row)
 
-<<<<<<< HEAD
-        # ── Timer d'auto-avance ───────────────────────────────────────────────
-        # Un seul QTimer partagé pour toute la durée de vie de la page.
-        # Toujours stoppé avant d'être relancé → zéro doublon possible.
-=======
         # ── Timer d'auto-avance (unique, singleShot) ──────────────
         # Règle PyQt5 : un seul QTimer partagé, toujours stop() avant start()
->>>>>>> test-integration
         self._advance_timer = QTimer(self)
         self._advance_timer.setSingleShot(True)
         self._advance_timer.timeout.connect(self._advance_to_next)
 
-<<<<<<< HEAD
-        # État interne
-        self._diffs        = []
-        self._d_idx        = 0
-        self._blue_circles = []    # [(orig_x, orig_y)] — clics joueur
-        self._tries        = 0
-        self._round_over   = False  # verrou : True dès que les résultats sont affichés
-
-    # =========================================================================
-    # CYCLE DE VIE D'UNE IMAGE
-    # =========================================================================
-=======
         # ── État ──────────────────────────────────────────────────
         self._diffs         = []
         self._d_idx         = 0
@@ -362,8 +301,8 @@ class DifferencePage(BasePage):
         self._circles_right = []
         self._blue_circles  = []
         self._tries         = 0
->>>>>>> test-integration
 
+    # ── Logique ───────────────────────────────────────────────────
     def on_show(self, **kwargs):
         self._diffs = self.mw.tc.get_diff_slice()
         self._d_idx = 0
@@ -372,30 +311,13 @@ class DifferencePage(BasePage):
         _make_transparent(self._team_banner)
         _force_labels_blue(self._team_banner)
         self._update_scores(self._boxes)
-        self._load_image()
+        self._load_diff()
 
-    def _load_image(self):
-        """
-        Charge l'image courante et démarre un chrono propre.
-        Séquence garantie :
-          1. Stopper TOUS les timers
-          2. Réinitialiser l'état
-          3. Mettre à jour l'UI
-          4. reset() + start() du CircularTimer
-        """
+    def _load_diff(self):
         if self._d_idx >= len(self._diffs):
             self.mw.show_page("menu")
             return
 
-<<<<<<< HEAD
-        # 1. Stopper tous les timers sans exception
-        self._stop_all_timers()
-
-        # 2. Réinitialiser l'état de la manche
-        self._blue_circles = []
-        self._tries        = 0
-        self._round_over   = False
-=======
         # ── 1. Stopper tous les timers AVANT tout reset ───────────
         self._stop_all_timers()
 
@@ -405,12 +327,9 @@ class DifferencePage(BasePage):
         self._answered      = False
         self._blue_circles  = []
         self._tries         = 0
->>>>>>> test-integration
 
         diff = self._diffs[self._d_idx]
         team = self.mw.tc.current_team
-
-        # 3. Mettre à jour l'UI
         self._refresh_team_banner()
         _make_transparent(self._team_banner)
         _force_labels_blue(self._team_banner)
@@ -419,29 +338,21 @@ class DifferencePage(BasePage):
         self._section_lbl.setText(
             f"Image {self._d_idx + 1} / {len(self._diffs)}  ·  Tour : {team.name}"
         )
-<<<<<<< HEAD
-        self._count_lbl.setText("0 / 5 essais")
-        self._count_lbl.setStyleSheet(
-            f"color: {ACCENT_BLUE}; background: transparent;"
-        )
-=======
         self._count_lbl.setText("0 / 5 tries")
         self._count_lbl.setStyleSheet(f"color: {ACCENT_BLUE}; background: transparent;")
->>>>>>> test-integration
 
-        # Charger les images et effacer les cercles
-        self._cv_left.set_image(os.path.join(DIFF_DIR, diff["left"]))
-        self._cv_right.set_image(os.path.join(DIFF_DIR, diff["right"]))
-        self._cv_left.clear_circles()
-        self._cv_right.clear_circles()
+        def load_img(fname, widget):
+            path = os.path.join(DIFF_DIR, fname)
+            pix  = QPixmap(path)
+            if pix.isNull():
+                widget.setPixmap(QPixmap())
+                widget.setText("Image manquante")
+                widget._original_size = None
+            else:
+                widget.setPixmap(pix)
+                widget.setText("")
+                widget._original_size = pix.size()
 
-<<<<<<< HEAD
-        # Réactiver les boutons
-        self._reveal_btn.setEnabled(True)
-        self._next_btn.setEnabled(True)
-
-        # 4. Démarrer le chronomètre — reset() PUIS start(), jamais l'inverse
-=======
         load_img(diff["left"],  self._cv_left)
         load_img(diff["right"], self._cv_right)
         self._cv_left.set_circles([])
@@ -452,28 +363,16 @@ class DifferencePage(BasePage):
         self._next_btn.setEnabled(True)
 
         # ── 4. Démarrer le chronomètre (reset PUIS start) ─────────
->>>>>>> test-integration
         self._timer.reset(TIMER_DURATION)
         self._timer.start()
 
         self.mw.audio.play("tension")
-<<<<<<< HEAD
-
-    # =========================================================================
-    # GESTION DES CLICS
-    # =========================================================================
-=======
->>>>>>> test-integration
 
     def _on_image_click(self, event):
-        """Enregistre un clic joueur. Au 5ᵉ essai, déclenche l'évaluation."""
-        if self._round_over or self._tries >= 5:
+        if self._tries >= 5 or self._answered:
             return
-
-<<<<<<< HEAD
         x, y = event.pos().x(), event.pos().y()
-        orig_x, orig_y = self._widget_to_orig(self._cv_right, x, y)
-=======
+
         # Convertir les coordonnées widget → espace image original
         if self._cv_right._original_size:
             scale_x = self._cv_right.width() / self._cv_right._original_size.width()
@@ -482,55 +381,16 @@ class DifferencePage(BasePage):
             orig_y = y / scale_y
         else:
             orig_x, orig_y = x, y
->>>>>>> test-integration
 
         self._blue_circles.append((orig_x, orig_y))
         self._tries += 1
-        self._count_lbl.setText(f"{self._tries} / 5 essais")
+        self._count_lbl.setText(f"{self._tries} / 5 tries")
 
-        # Affichage provisoire des clics en bleu
-        self._cv_right.set_circles(
-            [(bx, by, 10, "#4f8ef7") for bx, by in self._blue_circles]
-        )
+        if self._tries == 5:
+            self._evaluate_tries()
+        else:
+            self._update_blue_circles()
 
-<<<<<<< HEAD
-        if self._tries >= 5:
-            self._show_results()
-
-    # =========================================================================
-    # AFFICHAGE DES RÉSULTATS (point d'entrée unique)
-    # =========================================================================
-
-    def _show_results(self):
-        """
-        Stoppe le chrono, évalue les clics, affiche vert/rouge,
-        crédite les points, puis planifie l'auto-avance dans AUTO_ADVANCE_MS.
-
-        Le verrou _round_over garantit qu'on n'entre jamais deux fois ici
-        pour la même image, quelle que soit la source du déclenchement
-        (5 clics, timeout, bouton Révéler).
-        """
-        if self._round_over:
-            return
-        self._round_over = True
-
-        # Stopper le décompte et l'audio
-        self._stop_all_timers()
-        self.mw.audio.stop()
-
-        diff      = self._diffs[self._d_idx]
-        true_diffs = diff["diffs"]  # [(cx, cy, r), ...]
-
-        # Évaluer chaque clic
-        evaluated   = []
-        hits        = 0
-        matched_ids = set()
-
-        for bx, by in self._blue_circles:
-            hit = False
-            for i, (cx, cy, r) in enumerate(true_diffs):
-                if i not in matched_ids and math.hypot(bx - cx, by - cy) <= r + 22:
-=======
     def _update_blue_circles(self):
         circles = [(bx, by, 0, "#4f8ef7") for bx, by in self._blue_circles]
         self._cv_right.set_circles(circles)
@@ -561,31 +421,11 @@ class DifferencePage(BasePage):
                     cx = cx * self._cv_right._original_size.width()
                     cy = cy * self._cv_right._original_size.height()
                 if i not in hit_diffs and math.hypot(bx - cx, by - cy) <= r + 22:
->>>>>>> test-integration
                     hit = True
                     hits += 1
-                    matched_ids.add(i)
+                    hit_diffs.add(i)
                     break
             color = C["success"] if hit else C["error"]
-<<<<<<< HEAD
-            evaluated.append((bx, by, 10, color))
-
-        # Afficher résultats
-        self._cv_right.set_circles(evaluated)
-        self._cv_left.set_circles(
-            [(cx, cy, r, C["success"]) for cx, cy, r in true_diffs]
-        )
-
-        # Compteur final
-        found = len(matched_ids)
-        self._count_lbl.setText(f"{found} / {len(true_diffs)} trouvées")
-        self._count_lbl.setStyleSheet(
-            f"color: {C['success'] if found == len(true_diffs) else ACCENT_BLUE};"
-            " background: transparent;"
-        )
-
-        # Créditer les points (5 pts par différence trouvée)
-=======
             evaluated.append((bx, by, 0, color))
 
         self._cv_right.set_circles(evaluated)
@@ -594,7 +434,6 @@ class DifferencePage(BasePage):
         self._cv_left.set_circles(all_true)
 
         # Créditer les points
->>>>>>> test-integration
         for _ in range(hits):
             self.mw.tc.answer("diff", True)
         self._update_scores(self._boxes)
@@ -604,28 +443,6 @@ class DifferencePage(BasePage):
         self._refresh_team_banner()
         _force_labels_blue(self._team_banner)
 
-<<<<<<< HEAD
-        # Désactiver les boutons pendant la phase de résultats
-        self._reveal_btn.setEnabled(False)
-        self._next_btn.setEnabled(False)
-
-        # Planifier l'auto-avance (stop() avant start() : règle PyQt5)
-        self._advance_timer.stop()
-        self._advance_timer.start(AUTO_ADVANCE_MS)
-
-    # =========================================================================
-    # CALLBACKS TIMERS
-    # =========================================================================
-
-    def _on_countdown_finished(self):
-        """Signal CircularTimer.timeout — le temps est écoulé."""
-        self._show_results()
-
-    def _advance_to_next(self):
-        """
-        Déclenché par _advance_timer après AUTO_ADVANCE_MS.
-        Passe à l'image suivante (ou retourne au menu si terminé).
-=======
         # Désactiver les boutons pendant la phase résultats
         self._reveal_btn.setEnabled(False)
         self._next_btn.setEnabled(False)
@@ -648,48 +465,9 @@ class DifferencePage(BasePage):
         """
         Déclenché par _advance_timer après AUTO_ADVANCE_MS.
         Passe à l'image suivante.
->>>>>>> test-integration
         """
         self._d_idx += 1
-        self._load_image()
-
-    # =========================================================================
-    # CALLBACKS BOUTONS
-    # =========================================================================
-
-    def _on_reveal_clicked(self):
-        """Bouton 'Voir toutes les réponses' → évaluation immédiate."""
-        self._show_results()
-
-    def _on_next_clicked(self):
-        """
-        Bouton 'Image suivante' → annule l'auto-avance si elle était planifiée,
-        puis charge l'image suivante immédiatement.
-        """
-        self._advance_timer.stop()   # annuler le passage auto en cours
-        self._d_idx += 1
-        self._load_image()
-
-    # =========================================================================
-    # UTILITAIRES
-    # =========================================================================
-
-    def _stop_all_timers(self):
-        """
-        Arrête proprement TOUS les timers de la page.
-        Règle PyQt5 fondamentale : toujours stop() avant tout reset() ou start().
-        Sans ça, deux instances du même timer peuvent tourner en parallèle.
-        """
-        self._timer.stop()           # décompte visuel (CircularTimer)
-        self._advance_timer.stop()   # délai d'auto-avance (QTimer)
-
-    def _widget_to_orig(self, canvas: ImageCanvas, wx: int, wy: int):
-        """Convertit des coordonnées widget affichées → coordonnées image originale."""
-        if canvas._original_size and canvas._original_size.width() > 0:
-            sx = canvas._original_size.width()  / canvas.width()
-            sy = canvas._original_size.height() / canvas.height()
-            return wx * sx, wy * sy
-        return float(wx), float(wy)
+        self._load_diff()
 
     def _next_diff(self):
         """

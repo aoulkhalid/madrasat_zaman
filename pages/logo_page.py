@@ -1,22 +1,20 @@
 """
-pages/logo_page.py — Logo Game (présentateur valide bonne/mauvaise réponse)
-Style : même design que quiz_page — fond image, tout transparent, noms bleus
+pages/logo_page.py — Logo Game + HELP / JOKER system
 """
-import os, re
+import os, re, random
 from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
                               QPushButton, QFrame, QSizePolicy, QWidget)
 from PyQt5.QtCore    import Qt, QTimer, QRect
 from PyQt5.QtGui     import (QFont, QPixmap, QPainter, QColor,
                               QLinearGradient, QBrush, QPen, QPainterPath)
-from audio.manager import AudioManager
 from pages.base_page import BasePage
 from widgets.circular_timer import CircularTimer
+from widgets.help_popup import HelpPopup, LOGO_HELP_OPTIONS, MAX_HELP_USES
 from config import C, TIMER_DURATION, LOGOS_DIR
 
 
 BG_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "images", "background2.png")
 
-# ── Palette (identique quiz_page) ─────────────────────────────────────────────
 ACCENT_BLUE   = "#4f8ef7"
 ACCENT_PURPLE = "#a855f7"
 SUCCESS_COLOR = "#22d3a5"
@@ -48,7 +46,7 @@ def _force_labels_blue(widget):
         )
 
 
-# ── Fond : image plein écran + overlay minimal ────────────────────────────────
+# ── Fond ──────────────────────────────────────────────────────────────────────
 class _Background(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -58,21 +56,15 @@ class _Background(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.SmoothPixmapTransform)
         w, h = self.width(), self.height()
-
         if not self._bg_pixmap.isNull():
             p.drawPixmap(0, 0,
-                self._bg_pixmap.scaled(w, h,
-                    Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
+                self._bg_pixmap.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
         else:
             grad = QLinearGradient(0, 0, 0, h)
             grad.setColorAt(0.0, QColor("#dde6ed"))
             grad.setColorAt(1.0, QColor("#d6e3ec"))
             p.fillRect(self.rect(), QBrush(grad))
-
-        # Overlay ultra-léger
         p.fillRect(self.rect(), QColor(0, 0, 0, 30))
-
-        # Ligne lumineuse bleu→violet en haut
         lg = QLinearGradient(0, 0, w, 0)
         lg.setColorAt(0.0,  QColor(79, 142, 247, 0))
         lg.setColorAt(0.35, QColor(79, 142, 247, 160))
@@ -82,10 +74,8 @@ class _Background(QWidget):
         p.drawLine(0, 2, w, 2)
 
 
-# ── Bouton valider moderne (Bonne / Mauvaise réponse) ─────────────────────────
+# ── Bouton valider ─────────────────────────────────────────────────────────────
 class _ValidateButton(QPushButton):
-    """Bouton avec fond coloré, icône et texte — style premium."""
-
     def __init__(self, label: str, icon: str, color: str, bg_color: str):
         super().__init__()
         self._label    = label
@@ -102,41 +92,30 @@ class _ValidateButton(QPushButton):
         p.setRenderHint(QPainter.Antialiasing)
         r = self.rect()
         radius = 14
-
-        # Fond coloré semi-transparent
         if self.underMouse() and self.isEnabled():
             fill = QColor(self._bg_color); fill.setAlpha(220)
         else:
             fill = QColor(self._bg_color); fill.setAlpha(180)
-
         if not self.isEnabled():
             fill.setAlpha(80)
-
         path = QPainterPath()
         path.addRoundedRect(0, 0, r.width(), r.height(), radius, radius)
         p.fillPath(path, QBrush(fill))
-
-        # Bordure colorée
         border_c = QColor(self._color)
         if not self.isEnabled():
             border_c.setAlpha(80)
-        p.setPen(QPen(border_c, 2))
-        p.setBrush(Qt.NoBrush)
+        p.setPen(QPen(border_c, 2)); p.setBrush(Qt.NoBrush)
         p.drawRoundedRect(1, 1, r.width()-2, r.height()-2, radius, radius)
-
-        # Icône + texte
         text_c = QColor("#ffffff") if self.isEnabled() else QColor(200, 200, 200, 120)
         p.setPen(QPen(text_c))
         p.setFont(QFont("Segoe UI", 15, QFont.Bold))
         p.drawText(r, Qt.AlignCenter, f"{self._icon}  {self._label}")
 
-    def enterEvent(self, e):
-        super().enterEvent(e); self.update()
-    def leaveEvent(self, e):
-        super().leaveEvent(e); self.update()
+    def enterEvent(self, e): super().enterEvent(e); self.update()
+    def leaveEvent(self, e): super().leaveEvent(e); self.update()
 
 
-# ── Page Logo ─────────────────────────────────────────────────────────────────
+# ── Page Logo ──────────────────────────────────────────────────────────────────
 class LogoPage(BasePage):
 
     def _build_page(self):
@@ -159,6 +138,9 @@ class LogoPage(BasePage):
         hdr.set_center("LOGO GAME")
         _make_transparent(hdr)
         _force_labels_blue(hdr)
+
+        self._help_btn = self._make_help_button()
+        hdr.layout().insertWidget(hdr.layout().count() - 1, self._help_btn)
 
         # ── Bandeau équipe ────────────────────────────────────────
         self._team_banner = self._add_team_banner()
@@ -186,14 +168,11 @@ class LogoPage(BasePage):
         )
         self._root_layout.addWidget(self._section_lbl)
 
-        # ── Carte originale (make_card) ───────────────────────────
+        # ── Carte ─────────────────────────────────────────────────
         self._card = self._make_card()
-        self._card.setStyleSheet("""
-            QFrame {
-                background-color: rgba(255, 255, 255, 215);
-                border-radius: 22px;
-            }
-        """)
+        self._card.setStyleSheet(
+            "QFrame { background-color: rgba(255,255,255,215); border-radius: 22px; }"
+        )
         self._card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         card_layout = QVBoxLayout(self._card)
@@ -201,7 +180,7 @@ class LogoPage(BasePage):
         card_layout.setSpacing(12)
         card_layout.setAlignment(Qt.AlignCenter)
 
-        # Image du logo
+        # Image logo
         self._logo_lbl = QLabel()
         self._logo_lbl.setAlignment(Qt.AlignCenter)
         self._logo_lbl.setFixedHeight(420)
@@ -220,29 +199,37 @@ class LogoPage(BasePage):
         )
         card_layout.addWidget(self._hint_lbl)
 
-        # Feedback
+        # Label info HELP — caché par défaut
+        self._help_info_lbl = QLabel("")
+        self._help_info_lbl.setAlignment(Qt.AlignCenter)
+        self._help_info_lbl.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        self._help_info_lbl.setWordWrap(True)
+        self._help_info_lbl.setStyleSheet(
+            "background: rgba(79,142,247,18); border-radius: 10px;"
+            " padding: 6px 14px; color: #1a5c8a;"
+        )
+        self._help_info_lbl.setVisible(False)
+        card_layout.addWidget(self._help_info_lbl)
+
+        # Feedback validation
         self._feedback_lbl = QLabel("")
         self._feedback_lbl.setAlignment(Qt.AlignCenter)
         self._feedback_lbl.setFont(QFont("Segoe UI", 14, QFont.Bold))
         self._feedback_lbl.setStyleSheet("background: transparent;")
         card_layout.addWidget(self._feedback_lbl)
 
-        # ── Boutons Bonne / Mauvaise réponse ─────────────────────
+        # ── Boutons Bonne / Mauvaise réponse UNIQUEMENT ───────────
         btn_row = QHBoxLayout()
         btn_row.setSpacing(20)
         btn_row.setContentsMargins(0, 8, 0, 0)
 
         self._correct_btn = _ValidateButton(
-            "BONNE RÉPONSE", "✓",
-            color=C["success"],
-            bg_color=C["success_bg"]
+            "BONNE RÉPONSE", "✓", color=C["success"], bg_color=C["success_bg"]
         )
         self._correct_btn.clicked.connect(lambda: self._validate(True))
 
         self._wrong_btn = _ValidateButton(
-            "MAUVAISE RÉPONSE", "✗",
-            color=C["error"],
-            bg_color=C["error_bg"]
+            "MAUVAISE RÉPONSE", "✗", color=C["error"], bg_color=C["error_bg"]
         )
         self._wrong_btn.clicked.connect(lambda: self._validate(False))
 
@@ -260,11 +247,36 @@ class LogoPage(BasePage):
         self._l_idx      = 0
         self._answered   = False
         self._auto_timer = QTimer()
-        self._audio = AudioManager()
         self._auto_timer.setSingleShot(True)
         self._auto_timer.timeout.connect(self._next_logo)
 
-    # ── Logique ───────────────────────────────────────────────────
+    # =========================================================================
+    # HELP BUTTON
+    # =========================================================================
+    def _make_help_button(self) -> QPushButton:
+        btn = QPushButton("🎯  JOKER")
+        btn.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        btn.setFixedHeight(44)
+        btn.setMinimumWidth(140)
+        btn.setCursor(Qt.PointingHandCursor)
+        btn.setStyleSheet(
+            "QPushButton {"
+            f" background: rgba(79,142,247,35); color: {ACCENT_BLUE};"
+            f" border: 2px solid {ACCENT_BLUE};"
+            "  border-radius: 12px; padding: 0 14px; font-weight: bold; }"
+            "QPushButton:hover { background: rgba(79,142,247,70); }"
+            "QPushButton:disabled { background: rgba(150,150,150,20);"
+            " color: #aaaaaa; border-color: #aaaaaa; }"
+        )
+        btn.clicked.connect(self._open_help)
+        return btn
+
+    def _update_help_btn(self):
+        self._help_btn.setEnabled(not self._answered)
+
+    # =========================================================================
+    # LOGIQUE PRINCIPALE
+    # =========================================================================
     def on_show(self, **kwargs):
         self._logos  = self.mw.tc.get_logo_slice()
         self._l_idx  = 0
@@ -273,6 +285,7 @@ class LogoPage(BasePage):
         _make_transparent(self._team_banner)
         _force_labels_blue(self._team_banner)
         self._update_scores(self._boxes)
+        self._update_help_btn()
         self._load_logo()
 
     def _load_logo(self):
@@ -281,13 +294,15 @@ class LogoPage(BasePage):
             return
 
         self._answered = False
-        logo  = self._logos[self._l_idx]
-        team  = self.mw.tc.current_team
+        self._help_info_lbl.setVisible(False)
+        logo = self._logos[self._l_idx]
+        team = self.mw.tc.current_team
 
         self._refresh_team_banner()
         _make_transparent(self._team_banner)
         _force_labels_blue(self._team_banner)
         self._update_scores(self._boxes)
+        self._update_help_btn()
 
         self._section_lbl.setText(
             f"Logo {self._l_idx + 1} / {len(self._logos)}  ·  Tour : {team.name}"
@@ -295,7 +310,6 @@ class LogoPage(BasePage):
         self._hint_lbl.setText(logo.get("hint", ""))
         self._feedback_lbl.setText("")
 
-        # Charger image
         path = os.path.join(LOGOS_DIR, logo["image"])
         pix  = QPixmap(path)
         if pix.isNull():
@@ -315,15 +329,13 @@ class LogoPage(BasePage):
         self._wrong_btn.setEnabled(True)
         self._timer.reset(TIMER_DURATION)
         self._timer.start()
-        self._audio.stop()
-        self._audio.play("tension")
 
     def _validate(self, correct: bool):
         if self._answered:
             return
         self._answered = True
         self._timer.stop()
-        self._audio.stop()
+        self._help_btn.setEnabled(False)
         self._correct_btn.setEnabled(False)
         self._wrong_btn.setEnabled(False)
 
@@ -341,7 +353,6 @@ class LogoPage(BasePage):
             self._feedback_lbl.setStyleSheet(
                 f"color: {C['error']}; font-weight: bold; background: transparent;"
             )
-
         self._auto_timer.start(1400)
 
     def _on_timeout(self):
@@ -352,6 +363,79 @@ class LogoPage(BasePage):
         self.mw.tc.next_turn()
         self._l_idx += 1
         self._load_logo()
+
+    # =========================================================================
+    # HELP SYSTEM
+    # =========================================================================
+    def _open_help(self):
+        if self._answered:
+            return
+        self._timer.stop()
+        self.mw.audio.stop()
+        self._help_btn.setEnabled(False)
+
+        popup = HelpPopup(self, LOGO_HELP_OPTIONS, 0)
+        popup.option_chosen.connect(self._apply_help)
+        popup.cancelled.connect(self._resume_after_help)
+
+    def _apply_help(self, option_id: str):
+        self._update_help_btn()
+        if   option_id == "public_vote": self._help_public_vote()
+        elif option_id == "skip":        self._help_skip()
+        elif option_id == "teammate":    self._help_teammate()
+
+    def _resume_after_help(self):
+        if not self._answered:
+            self._timer.start()
+            self.mw.audio.play("tension")
+            self._update_help_btn()
+
+    def _help_public_vote(self):
+        logo   = self._logos[self._l_idx]
+        name   = logo["name"]
+        self._show_help_info(
+            f"👥 Le public indique : commence par « {name[0]} » — {len(name)} lettres",
+            "#3498db"
+        )
+        self._timer.start()
+        self.mw.audio.play("tension")
+
+    def _help_skip(self):
+        """
+        Skip via JOKER — même équipe rejoue le logo suivant.
+        next_turn() non appelé → tour inchangé.
+        """
+        if self._answered:
+            return
+        self._answered = True
+        self._timer.stop()
+        self._help_btn.setEnabled(False)
+        self._correct_btn.setEnabled(False)
+        self._wrong_btn.setEnabled(False)
+        logo = self._logos[self._l_idx]
+        self._feedback_lbl.setText(f"⏭️  Logo passé — {logo['name']}")
+        self._feedback_lbl.setStyleSheet(
+            "color: #f39c12; font-weight: bold; background: transparent;"
+        )
+        QTimer.singleShot(900, self._skip_to_next_logo)
+
+    def _skip_to_next_logo(self):
+        self._l_idx += 1
+        self._load_logo()
+
+    def _help_teammate(self):
+        self._show_help_info("🤝 Discussion autorisée ! Concertez-vous...", "#27ae60")
+        self._timer.start()
+        self.mw.audio.play("tension")
+
+    def _show_help_info(self, msg: str, color: str = "#3498db"):
+        self._help_info_lbl.setText(msg)
+        self._help_info_lbl.setStyleSheet(
+            f"background: rgba(255,255,255,220); border-radius: 10px;"
+            f" padding: 6px 14px; color: {color}; font-weight: bold;"
+        )
+        self._help_info_lbl.setVisible(True)
+        QTimer.singleShot(4000, lambda: self._help_info_lbl.setVisible(False))
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

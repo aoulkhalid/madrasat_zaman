@@ -1,7 +1,7 @@
 """
-pages/difference_page.py — Difference Game
-Même logique originale (5 essais, évaluation groupée, scaling coordonnées)
-+ Timer synchronisé + auto-avance 2s après résultats
+pages/difference_page.py — Difference Game + HELP / JOKER system
+Logique originale (5 essais, évaluation groupée, scaling coordonnées)
++ Timer synchronisé + auto-avance 2s + HELP/JOKER
 """
 import os, math, re
 from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
@@ -11,19 +11,18 @@ from PyQt5.QtGui     import (QFont, QPixmap, QPainter, QPen, QColor,
                               QBrush, QLinearGradient, QPainterPath)
 from pages.base_page import BasePage
 from widgets.circular_timer import CircularTimer
+from widgets.help_popup import HelpPopup, DIFF_HELP_OPTIONS, MAX_HELP_USES
 from config import C, TIMER_DURATION, POINTS_CORRECT, DIFF_DIR
 
 
 BG_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "images", "background2.png")
 
-# ── Palette ────────────────────────────────────────────────────────────────────
 ACCENT_BLUE   = "#4f8ef7"
 ACCENT_PURPLE = "#a855f7"
 BLUE_NAME     = "#4f8ef7"
 TEXT_MUTED    = "rgba(255,255,255,180)"
 _TRANSPARENT  = "background: transparent; border: none; background-color: transparent;"
 
-# Délai (ms) avant passage automatique à l'image suivante après résultats
 AUTO_ADVANCE_MS = 2000
 
 
@@ -61,8 +60,7 @@ class _Background(QWidget):
         w, h = self.width(), self.height()
         if not self._bg_pixmap.isNull():
             p.drawPixmap(0, 0,
-                self._bg_pixmap.scaled(w, h,
-                    Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
+                self._bg_pixmap.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
         else:
             grad = QLinearGradient(0, 0, 0, h)
             grad.setColorAt(0.0, QColor("#dde6ed"))
@@ -80,8 +78,6 @@ class _Background(QWidget):
 
 # ── Canvas image avec cercles superposés ──────────────────────────────────────
 class ImageCanvas(QLabel):
-    """QLabel avec superposition de cercles de différences — style moderne."""
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self._circles = []
@@ -98,8 +94,7 @@ class ImageCanvas(QLabel):
         )
 
     def set_circles(self, circles):
-        self._circles = circles
-        self.update()
+        self._circles = circles; self.update()
 
     def paintEvent(self, event):
         super().paintEvent(event)
@@ -121,12 +116,10 @@ class ImageCanvas(QLabel):
                     cy = cy * scale_y
                 rx = int(r * self.width() / self._original_size.width())
                 ry = int(r * self.height() / self._original_size.height())
-            # Halo externe
             halo = QColor(c); halo.setAlpha(40)
             painter.setPen(Qt.NoPen)
             painter.setBrush(QBrush(halo))
             painter.drawEllipse(QPoint(int(cx), int(cy)), rx + 18, ry + 18)
-            # Cercle principal
             painter.setPen(QPen(c, 3))
             fill = QColor(c); fill.setAlpha(35)
             painter.setBrush(QBrush(fill))
@@ -134,7 +127,7 @@ class ImageCanvas(QLabel):
         painter.end()
 
 
-# ── Bouton action moderne ──────────────────────────────────────────────────────
+# ── Bouton action ─────────────────────────────────────────────────────────────
 class _ActionButton(QPushButton):
     def __init__(self, label: str, icon: str, color: str, bg_color: str):
         super().__init__()
@@ -151,21 +144,19 @@ class _ActionButton(QPushButton):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
         r = self.rect()
-        radius = 14
         alpha = 255 if (self.underMouse() and self.isEnabled()) else 220
         if not self.isEnabled():
             alpha = 90
         fill = QColor(self._bg_color); fill.setAlpha(alpha)
         path = QPainterPath()
-        path.addRoundedRect(0, 0, r.width(), r.height(), radius, radius)
+        path.addRoundedRect(0, 0, r.width(), r.height(), 14, 14)
         p.fillPath(path, QBrush(fill))
-        border_c = QColor(self._color)
-        if not self.isEnabled(): border_c.setAlpha(80)
-        p.setPen(QPen(border_c, 2))
-        p.setBrush(Qt.NoBrush)
-        p.drawRoundedRect(1, 1, r.width()-2, r.height()-2, radius, radius)
-        text_c = QColor("#ffffff") if self.isEnabled() else QColor(180, 180, 180, 100)
-        p.setPen(QPen(text_c))
+        bc = QColor(self._color)
+        if not self.isEnabled(): bc.setAlpha(80)
+        p.setPen(QPen(bc, 2)); p.setBrush(Qt.NoBrush)
+        p.drawRoundedRect(1, 1, r.width()-2, r.height()-2, 14, 14)
+        tc = QColor("#ffffff") if self.isEnabled() else QColor(180, 180, 180, 100)
+        p.setPen(QPen(tc))
         p.setFont(QFont("Segoe UI", 14, QFont.Bold))
         p.drawText(r, Qt.AlignCenter, f"{self._icon}  {self._label}")
 
@@ -173,7 +164,7 @@ class _ActionButton(QPushButton):
     def leaveEvent(self, e): super().leaveEvent(e); self.update()
 
 
-# ── Page principale ────────────────────────────────────────────────────────────
+# ── Page Difference ────────────────────────────────────────────────────────────
 class DifferencePage(BasePage):
 
     def _build_page(self):
@@ -196,6 +187,10 @@ class DifferencePage(BasePage):
         hdr.set_center("DIFFERENCE GAME")
         _make_transparent(hdr)
         _force_labels_blue(hdr)
+
+        # Injecter le bouton HELP dans le header
+        self._help_btn = self._make_help_button()
+        hdr.layout().insertWidget(hdr.layout().count() - 1, self._help_btn)
 
         # ── Bandeau équipe ────────────────────────────────────────
         self._team_banner = self._add_team_banner()
@@ -232,7 +227,20 @@ class DifferencePage(BasePage):
         info_row.addWidget(self._count_lbl)
         self._root_layout.addLayout(info_row)
 
-        # ── Zone images — prend tout l'espace disponible ──────────
+        # Label info HELP — caché par défaut
+        self._help_info_lbl = QLabel("")
+        self._help_info_lbl.setAlignment(Qt.AlignCenter)
+        self._help_info_lbl.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        self._help_info_lbl.setWordWrap(True)
+        self._help_info_lbl.setFixedHeight(32)
+        self._help_info_lbl.setStyleSheet(
+            "background: rgba(255,255,255,220); border-radius: 10px;"
+            " padding: 4px 14px; color: #27ae60; font-weight: bold;"
+        )
+        self._help_info_lbl.setVisible(False)
+        self._root_layout.addWidget(self._help_info_lbl)
+
+        # ── Zone images ───────────────────────────────────────────
         images_wrap = QFrame()
         images_wrap.setStyleSheet("background: transparent; border: none;")
         images_wrap.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -240,7 +248,6 @@ class DifferencePage(BasePage):
         images_v.setContentsMargins(28, 2, 28, 2)
         images_v.setSpacing(6)
 
-        # Labels
         lbl_row = QHBoxLayout()
         lbl_row.setSpacing(16)
         for txt in ("Image originale", "Image modifiée  —  cliquez pour trouver"):
@@ -251,66 +258,79 @@ class DifferencePage(BasePage):
             lbl_row.addWidget(lbl, 1)
         images_v.addLayout(lbl_row)
 
-        # Canvas côte à côte
         canvas_row = QHBoxLayout()
         canvas_row.setSpacing(16)
-
         self._cv_left  = ImageCanvas()
         self._cv_right = ImageCanvas()
         self._cv_right.setCursor(Qt.CrossCursor)
         self._cv_right.mousePressEvent = self._on_image_click
-
         canvas_row.addWidget(self._cv_left,  1)
         canvas_row.addWidget(self._cv_right, 1)
         images_v.addLayout(canvas_row, stretch=1)
-
         self._root_layout.addWidget(images_wrap, stretch=1)
 
-        # ── Boutons ───────────────────────────────────────────────
-        btn_row = QHBoxLayout()
-        btn_row.setContentsMargins(28, 4, 28, 8)
-        btn_row.setSpacing(16)
-
+        # ── Bouton centré ─────────────────────────────────────────
         self._reveal_btn = _ActionButton(
             "VOIR TOUTES LES RÉPONSES", "👁",
             color="#6b7280", bg_color="#6b7280"
         )
         self._reveal_btn.clicked.connect(self._reveal_all)
 
-        self._next_btn = _ActionButton(
-            "IMAGE SUIVANTE", "→",
-            color=C["success"], bg_color=C["success"]
-        )
-        self._next_btn.clicked.connect(self._next_diff)
-
+        btn_row = QHBoxLayout()
+        btn_row.setContentsMargins(80, 4, 80, 8)   # marges larges = centré visuellement
         btn_row.addWidget(self._reveal_btn)
-        btn_row.addWidget(self._next_btn)
         self._root_layout.addLayout(btn_row)
 
-        # ── Timer d'auto-avance (unique, singleShot) ──────────────
-        # Règle PyQt5 : un seul QTimer partagé, toujours stop() avant start()
+        # ── Timer d'auto-avance (singleShot, partagé) ─────────────
         self._advance_timer = QTimer(self)
         self._advance_timer.setSingleShot(True)
         self._advance_timer.timeout.connect(self._advance_to_next)
 
         # ── État ──────────────────────────────────────────────────
-        self._diffs         = []
-        self._d_idx         = 0
-        self._found_set     = set()
-        self._answered      = False   # verrou : True dès que résultats affichés
-        self._circles_right = []
-        self._blue_circles  = []
-        self._tries         = 0
+        self._diffs          = []
+        self._d_idx          = 0
+        self._found_set      = set()
+        self._answered       = False
+        self._circles_right  = []
+        self._blue_circles   = []
+        self._tries          = 0
 
-    # ── Logique ───────────────────────────────────────────────────
+    # =========================================================================
+    # HELP BUTTON — fabrique
+    # =========================================================================
+    def _make_help_button(self) -> QPushButton:
+        btn = QPushButton("🎯  JOKER")
+        btn.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        btn.setFixedHeight(44)
+        btn.setMinimumWidth(140)
+        btn.setCursor(Qt.PointingHandCursor)
+        btn.setStyleSheet(
+            "QPushButton {"
+            f" background: rgba(79,142,247,35); color: {ACCENT_BLUE};"
+            f" border: 2px solid {ACCENT_BLUE};"
+            "  border-radius: 12px; padding: 0 14px; font-weight: bold; }"
+            "QPushButton:hover { background: rgba(79,142,247,70); }"
+            "QPushButton:disabled { background: rgba(150,150,150,20);"
+            " color: #aaaaaa; border-color: #aaaaaa; }"
+        )
+        btn.clicked.connect(self._open_help)
+        return btn
+
+    def _update_help_btn(self):
+        self._help_btn.setEnabled(not self._answered)
+
+    # =========================================================================
+    # LOGIQUE PRINCIPALE
+    # =========================================================================
     def on_show(self, **kwargs):
-        self._diffs = self.mw.tc.get_diff_slice()
-        self._d_idx = 0
+        self._diffs          = self.mw.tc.get_diff_slice()
+        self._d_idx          = 0
         self.mw.tc.current_match._turn_index = 0
         self._refresh_team_banner()
         _make_transparent(self._team_banner)
         _force_labels_blue(self._team_banner)
         self._update_scores(self._boxes)
+        self._update_help_btn()
         self._load_diff()
 
     def _load_diff(self):
@@ -318,15 +338,16 @@ class DifferencePage(BasePage):
             self.mw.show_page("menu")
             return
 
-        # ── 1. Stopper tous les timers AVANT tout reset ───────────
+        # 1. Stopper tous les timers
         self._stop_all_timers()
 
-        # ── 2. Réinitialiser l'état ───────────────────────────────
+        # 2. Réinitialiser l'état
         self._found_set     = set()
         self._circles_right = []
         self._answered      = False
         self._blue_circles  = []
         self._tries         = 0
+        self._help_info_lbl.setVisible(False)
 
         diff = self._diffs[self._d_idx]
         team = self.mw.tc.current_team
@@ -334,6 +355,7 @@ class DifferencePage(BasePage):
         _make_transparent(self._team_banner)
         _force_labels_blue(self._team_banner)
         self._update_scores(self._boxes)
+        self._update_help_btn()
 
         self._section_lbl.setText(
             f"Image {self._d_idx + 1} / {len(self._diffs)}  ·  Tour : {team.name}"
@@ -358,14 +380,12 @@ class DifferencePage(BasePage):
         self._cv_left.set_circles([])
         self._cv_right.set_circles([])
 
-        # ── 3. Réactiver les boutons ──────────────────────────────
+        # 3. Réactiver le bouton
         self._reveal_btn.setEnabled(True)
-        self._next_btn.setEnabled(True)
 
-        # ── 4. Démarrer le chronomètre (reset PUIS start) ─────────
+        # 4. Démarrer le chronomètre (reset PUIS start)
         self._timer.reset(TIMER_DURATION)
         self._timer.start()
-
         self.mw.audio.play("tension")
 
     def _on_image_click(self, event):
@@ -373,7 +393,6 @@ class DifferencePage(BasePage):
             return
         x, y = event.pos().x(), event.pos().y()
 
-        # Convertir les coordonnées widget → espace image original
         if self._cv_right._original_size:
             scale_x = self._cv_right.width() / self._cv_right._original_size.width()
             scale_y = self._cv_right.height() / self._cv_right._original_size.height()
@@ -392,21 +411,18 @@ class DifferencePage(BasePage):
             self._update_blue_circles()
 
     def _update_blue_circles(self):
-        circles = [(bx, by, 0, "#4f8ef7") for bx, by in self._blue_circles]
-        self._cv_right.set_circles(circles)
+        self._cv_right.set_circles(
+            [(bx, by, 0, "#4f8ef7") for bx, by in self._blue_circles]
+        )
 
     def _evaluate_tries(self):
-        """
-        Point d'entrée unique pour afficher les résultats.
-        Verrou _answered : n'est exécuté qu'une seule fois par image.
-        """
+        """Point d'entrée unique pour les résultats. Verrou _answered."""
         if self._answered:
             return
         self._answered = True
-
-        # Stopper le chrono dès l'évaluation
         self._stop_all_timers()
         self.mw.audio.stop()
+        self._help_btn.setEnabled(False)
 
         diff = self._diffs[self._d_idx]
         evaluated = []
@@ -416,78 +432,106 @@ class DifferencePage(BasePage):
         for bx, by in self._blue_circles:
             hit = False
             for i, (cx, cy, r) in enumerate(diff["diffs"]):
-                # Supporter coordonnées normalisées (0–1) ou pixels
                 if self._cv_right._original_size and 0 <= cx <= 1 and 0 <= cy <= 1:
                     cx = cx * self._cv_right._original_size.width()
                     cy = cy * self._cv_right._original_size.height()
                 if i not in hit_diffs and math.hypot(bx - cx, by - cy) <= r + 22:
-                    hit = True
-                    hits += 1
-                    hit_diffs.add(i)
-                    break
-            color = C["success"] if hit else C["error"]
-            evaluated.append((bx, by, 0, color))
+                    hit = True; hits += 1; hit_diffs.add(i); break
+            evaluated.append((bx, by, 0, C["success"] if hit else C["error"]))
 
         self._cv_right.set_circles(evaluated)
-        # Toutes les vraies différences sur le canvas gauche
-        all_true = [(cx, cy, r, C["success"]) for cx, cy, r in diff["diffs"]]
-        self._cv_left.set_circles(all_true)
+        self._cv_left.set_circles(
+            [(cx, cy, r, C["success"]) for cx, cy, r in diff["diffs"]]
+        )
 
-        # Créditer les points
         for _ in range(hits):
             self.mw.tc.answer("diff", True)
         self._update_scores(self._boxes)
 
-        # Changer de tour
         self.mw.tc.next_turn()
         self._refresh_team_banner()
         _force_labels_blue(self._team_banner)
 
-        # Désactiver les boutons pendant la phase résultats
         self._reveal_btn.setEnabled(False)
-        self._next_btn.setEnabled(False)
 
-        # Planifier l'auto-avance (stop() avant start() : règle PyQt5)
+        # Auto-avance — next_turn() déjà appelé donc l'autre équipe joue ensuite
         self._advance_timer.stop()
         self._advance_timer.start(AUTO_ADVANCE_MS)
 
     def _reveal_all(self):
-        """Bouton 'Voir toutes les réponses' → évaluation immédiate."""
         if not self._answered:
             self._evaluate_tries()
 
     def _on_timeout(self):
-        """Le décompte est arrivé à zéro → forcer l'évaluation."""
         if not self._answered:
             self._evaluate_tries()
 
     def _advance_to_next(self):
-        """
-        Déclenché par _advance_timer après AUTO_ADVANCE_MS.
-        Passe à l'image suivante.
-        """
         self._d_idx += 1
         self._load_diff()
 
     def _next_diff(self):
-        """
-        Bouton 'Image suivante' → annule l'auto-avance si planifiée
-        et charge immédiatement l'image suivante.
-        """
-        # Annuler le passage automatique en cours si présent
         self._advance_timer.stop()
         self._d_idx += 1
         self._load_diff()
 
+    # =========================================================================
+    # HELP SYSTEM
+    # =========================================================================
+    def _open_help(self):
+        if self._answered:
+            return
+        # Pause complète
+        self._stop_all_timers()
+        self.mw.audio.stop()
+        self._help_btn.setEnabled(False)
+
+        popup = HelpPopup(self, DIFF_HELP_OPTIONS, 0)
+        popup.option_chosen.connect(self._apply_help)
+        popup.cancelled.connect(self._resume_after_help)
+
+    def _apply_help(self, option_id: str):
+        self._update_help_btn()
+
+        if   option_id == "skip":     self._help_skip()
+        elif option_id == "teammate": self._help_teammate()
+
+    def _resume_after_help(self):
+        """Reprend le jeu si le joueur annule le popup."""
+        if not self._answered:
+            self._timer.start()
+            self.mw.audio.play("tension")
+            self._update_help_btn()
+
+    # ── Actions spécifiques ───────────────────────────────────────
+    def _help_skip(self):
+        """
+        Passe l'image sans changer d'équipe.
+        next_turn() n'est PAS appelé → la même équipe continue sur l'image suivante.
+        """
+        self._d_idx += 1
+        self._load_diff()
+
+    def _help_teammate(self):
+        self._show_help_info("🤝 Discussion autorisée ! Concertez-vous...", "#27ae60")
+        self._timer.start()
+        self.mw.audio.play("tension")
+
+    # ── Feedback visuel ───────────────────────────────────────────
+    def _show_help_info(self, msg: str, color: str = "#27ae60"):
+        self._help_info_lbl.setText(msg)
+        self._help_info_lbl.setStyleSheet(
+            f"background: rgba(255,255,255,220); border-radius: 10px;"
+            f" padding: 4px 14px; color: {color}; font-weight: bold;"
+        )
+        self._help_info_lbl.setVisible(True)
+        QTimer.singleShot(4000, lambda: self._help_info_lbl.setVisible(False))
+
     # ── Utilitaires ───────────────────────────────────────────────
     def _stop_all_timers(self):
-        """
-        Stoppe proprement TOUS les timers de la page.
-        Toujours appelé avant tout reset() ou start() pour éviter
-        plusieurs timers actifs en parallèle.
-        """
-        self._timer.stop()           # CircularTimer (décompte visuel)
-        self._advance_timer.stop()   # QTimer d'auto-avance
+        """Stoppe les deux timers de la page — toujours avant reset/start."""
+        self._timer.stop()
+        self._advance_timer.stop()
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

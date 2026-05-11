@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtCore    import Qt, QTimer, QRect
 from PyQt5.QtGui     import (QFont, QPixmap, QPainter, QColor,
                               QLinearGradient, QBrush, QPen, QPainterPath)
+from audio.manager import AudioManager
 from pages.base_page import BasePage
 from widgets.circular_timer import CircularTimer
 from config import C, TIMER_DURATION, LOGOS_DIR
@@ -259,6 +260,7 @@ class LogoPage(BasePage):
         self._l_idx      = 0
         self._answered   = False
         self._auto_timer = QTimer()
+        self._audio = AudioManager()
         self._auto_timer.setSingleShot(True)
         self._auto_timer.timeout.connect(self._next_logo)
 
@@ -313,12 +315,15 @@ class LogoPage(BasePage):
         self._wrong_btn.setEnabled(True)
         self._timer.reset(TIMER_DURATION)
         self._timer.start()
+        self._audio.stop()
+        self._audio.play("tension")
 
     def _validate(self, correct: bool):
         if self._answered:
             return
         self._answered = True
         self._timer.stop()
+        self._audio.stop()
         self._correct_btn.setEnabled(False)
         self._wrong_btn.setEnabled(False)
 

@@ -8,15 +8,41 @@ clique ✅ Correct ou ❌ Incorrect pour valider chaque indice.
 4/4 indices résolus avant la fin du chrono -> enquête résolue (+40 pts)
 Sinon (temps écoulé ou indice raté en fin de tentative) -> enquête non résolue (-10 pts)
 """
+import os
+
 from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
-                              QPushButton, QFrame, QWidget)
+                              QPushButton, QFrame, QWidget,
+                              QGraphicsDropShadowEffect)
 from PyQt5.QtCore    import Qt, QTimer
-from PyQt5.QtGui     import QFont
+from PyQt5.QtGui     import QFont, QColor, QPainter, QPixmap
 
 from pages.base_page import BasePage
 from widgets.circular_timer import CircularTimer
 from config import (C, CYBER_DURATION, CYBER_CLUES_PER_ATTEMPT,
                      CYBER_POINTS_SUCCESS, CYBER_POINTS_FAIL)
+
+# NOTE : adapte le nom de fichier si ton image de fond "cyber" porte un autre
+# nom dans assets/images (ex. background3.png). Le paintEvent ci-dessous ne
+# fait rien si le fichier est introuvable (pixmap.isNull()), donc aucun risque
+# de crash — juste pas de fond affiché tant que le chemin n'est pas correct.
+BG_PATH = os.path.abspath(
+    os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "assets",
+        "images",
+        "background2.png"
+    )
+).replace("\\", "/")
+
+
+def _make_shadow(blur=28, dx=0, dy=8, alpha=90):
+    """Petit utilitaire pour des ombres portées cohérentes dans toute la page."""
+    shadow = QGraphicsDropShadowEffect()
+    shadow.setBlurRadius(blur)
+    shadow.setOffset(dx, dy)
+    shadow.setColor(QColor(0, 0, 0, alpha))
+    return shadow
 
 
 class _ClueBadge(QFrame):
@@ -24,15 +50,15 @@ class _ClueBadge(QFrame):
 
     def __init__(self, title, parent=None):
         super().__init__(parent)
-        self.setFixedSize(120, 80)
+        self.setFixedSize(128, 86)
         self._solved = False
         self._layout = QVBoxLayout(self)
-        self._layout.setContentsMargins(6, 6, 6, 6)
-        self._layout.setSpacing(2)
+        self._layout.setContentsMargins(8, 8, 8, 8)
+        self._layout.setSpacing(3)
 
         self._icon_lbl = QLabel("🔍")
         self._icon_lbl.setAlignment(Qt.AlignCenter)
-        self._icon_lbl.setFont(QFont("Segoe UI", 22))
+        self._icon_lbl.setFont(QFont("Segoe UI", 23))
         self._icon_lbl.setStyleSheet("background: transparent;")
 
         self._title_lbl = QLabel(title)
@@ -42,6 +68,8 @@ class _ClueBadge(QFrame):
 
         self._layout.addWidget(self._icon_lbl)
         self._layout.addWidget(self._title_lbl)
+
+        self.setGraphicsEffect(_make_shadow(blur=16, dy=4, alpha=65))
         self.set_state("pending")
 
     def set_state(self, state: str):
@@ -62,7 +90,7 @@ class _ClueBadge(QFrame):
             QFrame {{
                 background-color: {bg};
                 border: 2px solid {border};
-                border-radius: 14px;
+                border-radius: 18px;
             }}
         """)
 
@@ -72,13 +100,31 @@ class _ClueBadge(QFrame):
 
 class CyberPage(BasePage):
 
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.SmoothPixmapTransform)
+
+        pixmap = QPixmap(BG_PATH)
+        if not pixmap.isNull():
+            scaled = pixmap.scaled(
+                self.size(),
+                Qt.KeepAspectRatioByExpanding,
+                Qt.SmoothTransformation
+            )
+            x = (self.width() - scaled.width()) // 2
+            y = (self.height() - scaled.height()) // 2
+            painter.drawPixmap(x, y, scaled)
+
+        painter.end()
+        super().paintEvent(event)
+
     def _build_page(self):
         layout = self._root_layout
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
         container = QWidget(self)
-        container.setStyleSheet(f"background-color: {C['bg']};")
+        container.setStyleSheet("background: transparent;")
         c_layout = QVBoxLayout(container)
         c_layout.setContentsMargins(0, 0, 0, 0)
         c_layout.setSpacing(0)
@@ -99,34 +145,71 @@ class CyberPage(BasePage):
         # Rangée des indices
         clues_row = QHBoxLayout()
         clues_row.setAlignment(Qt.AlignCenter)
-        clues_row.setSpacing(16)
-        clues_row.setContentsMargins(0, 10, 0, 10)
+        clues_row.setSpacing(18)
+        clues_row.setContentsMargins(0, 12, 0, 12)
         self._clue_badges = []
         self._clues_wrap = QWidget()
+        self._clues_wrap.setStyleSheet("background: transparent;")
         self._clues_wrap.setLayout(clues_row)
         self._clues_row_layout = clues_row
         self._root_layout.addWidget(self._clues_wrap)
 
-        # Zone de contenu dynamique
-        self._content = QFrame()
-        self._content.setStyleSheet("background: transparent; border: none;")
-        self._content_layout = QVBoxLayout(self._content)
+        # Zone de contenu dynamique — carte "verre dépoli" pour la lisibilité
+        # sur le fond illustré, sans toucher à la palette de couleurs (C).
+        self._content_card = QFrame()
+        self._content_card.setObjectName("cyberCard")
+        self._content_card.setStyleSheet("""
+            QFrame#cyberCard {
+                background-color: rgba(255, 255, 255, 0.90);
+                border-radius: 26px;
+            }
+        """)
+        self._content_card.setGraphicsEffect(_make_shadow(blur=32, dy=9, alpha=80))
+
+        card_outer = QVBoxLayout()
+        card_outer.setContentsMargins(24, 18, 24, 28)
+        card_outer.addWidget(self._content_card)
+        self._root_layout.addLayout(card_outer, stretch=1)
+
+        self._content_layout = QVBoxLayout(self._content_card)
         self._content_layout.setAlignment(Qt.AlignCenter)
+        self._content_layout.setContentsMargins(32, 26, 32, 26)
         self._content_layout.setSpacing(16)
-        self._root_layout.addWidget(self._content, stretch=1)
+
+    @staticmethod
+    def _clear_layout(layout):
+        """Vide récursivement un layout : widgets ET sous-layouts.
+
+        item.widget() renvoie None quand l'item contient un layout imbriqué
+        (le QHBoxLayout des boutons ✅/❌ est ajouté via addLayout()). Ne
+        traiter que les widgets directs laissait les boutons de l'indice
+        précédent vivants et affichés sous les nouveaux -> effet "dupliqué".
+        """
+        while layout.count():
+            item = layout.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                # hide() immédiat : deleteLater() ne détruit le widget qu'au
+                # prochain passage de la boucle d'événements, donc sans
+                # hide() il resterait visible en superposition entre-temps.
+                w.hide()
+                w.deleteLater()
+                continue
+
+            child_layout = item.layout()
+            if child_layout is not None:
+                CyberPage._clear_layout(child_layout)
+                child_layout.setParent(None)
 
     def _clear_content(self):
-        while self._content_layout.count():
-            item = self._content_layout.takeAt(0)
-            w = item.widget()
-            if w:
-                w.deleteLater()
+        self._clear_layout(self._content_layout)
 
     def _rebuild_clues_row(self):
         while self._clues_row_layout.count():
             item = self._clues_row_layout.takeAt(0)
             w = item.widget()
             if w:
+                w.hide()
                 w.deleteLater()
         self._clue_badges = []
         for c in self._clues:
@@ -157,21 +240,25 @@ class CyberPage(BasePage):
 
     def _load_clue(self):
         self._clear_content()
+        # Verrou anti double-clic / double-validation pour CET indice.
+        self._clue_locked = False
         clue = self._clues[self._c_idx]
 
         counter = QLabel(f"Indice {self._c_idx + 1} / {len(self._clues)}")
         counter.setAlignment(Qt.AlignCenter)
-        counter.setFont(QFont("Segoe UI", 11))
-        counter.setStyleSheet(f"color: {C['text_light']}; background: transparent;")
+        counter.setFont(QFont("Segoe UI", 12, QFont.DemiBold))
+        counter.setStyleSheet(
+            f"color: {C['text_med']}; background: transparent; letter-spacing: 1px;"
+        )
 
         icon = QLabel(clue["icon"])
         icon.setAlignment(Qt.AlignCenter)
-        icon.setFont(QFont("Segoe UI", 36))
+        icon.setFont(QFont("Segoe UI", 38))
         icon.setStyleSheet("background: transparent;")
 
         title = QLabel(clue["title"])
         title.setAlignment(Qt.AlignCenter)
-        title.setFont(QFont("Segoe UI", 14, QFont.Bold))
+        title.setFont(QFont("Segoe UI", 15, QFont.Bold))
         title.setStyleSheet(f"color: {C['text_light']}; background: transparent;")
 
         situation = QLabel(clue["clue"])
@@ -180,14 +267,15 @@ class CyberPage(BasePage):
         situation.setFont(QFont("Consolas", 13))
         situation.setStyleSheet(f"""
             color: {C['text_dark']}; background-color: white;
-            border: 1px solid {C['border']}; border-radius: 12px;
-            padding: 12px 20px;
+            border: 1px solid {C['border']}; border-radius: 16px;
+            padding: 14px 22px;
         """)
+        situation.setGraphicsEffect(_make_shadow(blur=14, dy=3, alpha=35))
 
         question = QLabel(clue["question"])
         question.setAlignment(Qt.AlignCenter)
         question.setWordWrap(True)
-        question.setFont(QFont("Segoe UI", 19, QFont.Bold))
+        question.setFont(QFont("Segoe UI", 20, QFont.Bold))
         question.setStyleSheet(f"color: {C['primary']}; background: transparent;")
 
         self._answer_lbl = QLabel("")
@@ -198,30 +286,58 @@ class CyberPage(BasePage):
 
         btn_row = QHBoxLayout()
         btn_row.setAlignment(Qt.AlignCenter)
-        btn_row.setSpacing(20)
+        btn_row.setSpacing(22)
 
-        ok_btn = QPushButton("✅  Correct")
-        ok_btn.setFixedSize(180, 56)
-        ok_btn.setFont(QFont("Segoe UI", 13, QFont.Bold))
-        ok_btn.setCursor(Qt.PointingHandCursor)
-        ok_btn.setStyleSheet(f"""
-            QPushButton {{ background-color: {C['success']}; color: white; border-radius: 14px; }}
-            QPushButton:hover {{ background-color: #219150; }}
+        self._ok_btn = QPushButton("✅  Correct")
+        self._ok_btn.setFixedSize(190, 58)
+        self._ok_btn.setFont(QFont("Segoe UI", 13, QFont.Bold))
+        self._ok_btn.setCursor(Qt.PointingHandCursor)
+        self._ok_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {C['success']};
+                color: white;
+                border-radius: 16px;
+                border: none;
+            }}
+            QPushButton:hover {{
+                background-color: #219150;
+            }}
+            QPushButton:pressed {{
+                padding-top: 3px;
+            }}
+            QPushButton:disabled {{
+                background-color: #a9dcc1;
+            }}
         """)
-        ok_btn.clicked.connect(lambda: self._validate(True))
+        self._ok_btn.setGraphicsEffect(_make_shadow(blur=16, dy=5, alpha=55))
+        self._ok_btn.clicked.connect(lambda: self._validate(True))
 
-        no_btn = QPushButton("❌  Incorrect")
-        no_btn.setFixedSize(180, 56)
-        no_btn.setFont(QFont("Segoe UI", 13, QFont.Bold))
-        no_btn.setCursor(Qt.PointingHandCursor)
-        no_btn.setStyleSheet(f"""
-            QPushButton {{ background-color: {C['error']}; color: white; border-radius: 14px; }}
-            QPushButton:hover {{ background-color: #c0392b; }}
+        self._no_btn = QPushButton("❌  Incorrect")
+        self._no_btn.setFixedSize(190, 58)
+        self._no_btn.setFont(QFont("Segoe UI", 13, QFont.Bold))
+        self._no_btn.setCursor(Qt.PointingHandCursor)
+        self._no_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {C['error']};
+                color: white;
+                border-radius: 16px;
+                border: none;
+            }}
+            QPushButton:hover {{
+                background-color: #c0392b;
+            }}
+            QPushButton:pressed {{
+                padding-top: 3px;
+            }}
+            QPushButton:disabled {{
+                background-color: #eab2ac;
+            }}
         """)
-        no_btn.clicked.connect(lambda: self._validate(False))
+        self._no_btn.setGraphicsEffect(_make_shadow(blur=16, dy=5, alpha=55))
+        self._no_btn.clicked.connect(lambda: self._validate(False))
 
-        btn_row.addWidget(ok_btn)
-        btn_row.addWidget(no_btn)
+        btn_row.addWidget(self._ok_btn)
+        btn_row.addWidget(self._no_btn)
 
         self._content_layout.addWidget(counter)
         self._content_layout.addWidget(icon)
@@ -232,8 +348,17 @@ class CyberPage(BasePage):
         self._content_layout.addWidget(self._answer_lbl)
 
     def _validate(self, is_correct: bool):
-        if self._finished:
+        # Double garde : l'attempt entière est-elle finie ? cet indice a-t-il
+        # déjà été validé ? Empêche un double-clic (ou un clic sur les deux
+        # boutons avant la transition) de faire avancer deux fois l'index,
+        # ce qui "sautait" un indice / dupliquait l'affichage des boutons.
+        if self._finished or self._clue_locked:
             return
+        self._clue_locked = True
+
+        self._ok_btn.setEnabled(False)
+        self._no_btn.setEnabled(False)
+
         clue = self._clues[self._c_idx]
         self._clue_badges[self._c_idx].set_state("solved" if is_correct else "failed")
         self._answer_lbl.setText(f"Réponse : {clue['answer']}")
@@ -241,6 +366,8 @@ class CyberPage(BasePage):
         QTimer.singleShot(1200, self._next_clue)
 
     def _next_clue(self):
+        if self._finished:
+            return
         self._c_idx += 1
         if self._c_idx >= len(self._clues):
             self._finish_attempt()
@@ -256,6 +383,7 @@ class CyberPage(BasePage):
         if self._finished:
             return
         self._finished = True
+        self._clue_locked = True
         self._timer.stop()
         self._clear_content()
 
@@ -274,7 +402,7 @@ class CyberPage(BasePage):
             msg.setStyleSheet(f"color: {C['error']}; background: transparent;")
 
         msg.setAlignment(Qt.AlignCenter)
-        msg.setFont(QFont("Segoe UI", 20, QFont.Bold))
+        msg.setFont(QFont("Segoe UI", 21, QFont.Bold))
         self._content_layout.addWidget(msg)
 
         QTimer.singleShot(2600, self._after_attempt)

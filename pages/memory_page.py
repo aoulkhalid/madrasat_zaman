@@ -21,9 +21,10 @@ s'affiche automatiquement à la place — l'app ne plante jamais.
 import os
 import random
 from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
-                              QPushButton, QFrame, QWidget, QGridLayout)
+                              QPushButton, QFrame, QWidget, QGridLayout,
+                              QGraphicsDropShadowEffect)
 from PyQt5.QtCore    import Qt, QTimer, QSize
-from PyQt5.QtGui     import QFont, QIcon, QPixmap
+from PyQt5.QtGui     import QFont, QIcon, QPixmap, QColor, QPainter
 
 from pages.base_page import BasePage
 from widgets.circular_timer import CircularTimer
@@ -39,10 +40,37 @@ CARD_MIN_SIZE = 100
 CARD_MAX_SIZE = 280
 CARD_SPACING  = 16
 
-# Espace réservé en hauteur pour header + bandeau équipe + scoreboard/timer
-# + label de manche + marges — ajusté au plus juste pour maximiser les cartes.
-RESERVED_HEIGHT = 250
-RESERVED_WIDTH  = 40
+# Espace réservé en hauteur/largeur pour header + bandeau équipe +
+# scoreboard/timer + pastille de manche + la carte "verre" qui encadre
+# désormais le plateau — ajusté au plus juste pour maximiser les cartes.
+RESERVED_HEIGHT = 300
+RESERVED_WIDTH  = 100
+
+# NOTE : adapte le nom de fichier si ton image de fond "memory" porte un
+# autre nom dans assets/images. Le paintEvent ci-dessous ne fait rien si le
+# fichier est introuvable (pixmap.isNull()), donc aucun risque de crash —
+# juste pas de fond affiché tant que le chemin n'est pas correct.
+BG_PATH = os.path.abspath(
+    os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "assets",
+        "images",
+        "background2.png"
+    )
+).replace("\\", "/")
+
+
+def _make_shadow(blur=20, dx=0, dy=6, color=None, alpha=90):
+    """Ombre/halo portée réutilisable ; `color` permet un halo coloré
+    (ex. lueur verte sur une paire trouvée)."""
+    shadow = QGraphicsDropShadowEffect()
+    shadow.setBlurRadius(blur)
+    shadow.setOffset(dx, dy)
+    qc = QColor(color) if color is not None else QColor(0, 0, 0)
+    qc.setAlpha(alpha)
+    shadow.setColor(qc)
+    return shadow
 
 
 class _CardButton(QPushButton):
@@ -63,7 +91,7 @@ class _CardButton(QPushButton):
             QPushButton {{
                 background-color: {bg};
                 border: 3px solid {border};
-                border-radius: 16px;
+                border-radius: 18px;
             }}
         """
 
@@ -74,7 +102,9 @@ class _CardButton(QPushButton):
         self.setFont(QFont("Segoe UI", int(self._size * 0.38), QFont.Bold))
         self.setStyleSheet(self._style(C['primary'], C['primary_light']) + """
             QPushButton { color: white; }
+            QPushButton:hover { border: 3px solid white; }
         """)
+        self.setGraphicsEffect(_make_shadow(blur=14, dy=4, alpha=70))
 
     def _set_face(self, image_path, bg, border):
         pixmap = None
@@ -96,13 +126,33 @@ class _CardButton(QPushButton):
 
     def set_revealed(self, image_path):
         self._set_face(image_path, "white", C['border'])
+        self.setGraphicsEffect(_make_shadow(blur=16, dy=4, color=C['primary'], alpha=90))
 
     def set_matched(self, image_path):
         """Paire trouvée — reste affichée ainsi jusqu'à la fin de la manche."""
         self._set_face(image_path, C['success_bg'], C['success'])
+        self.setGraphicsEffect(_make_shadow(blur=22, dy=0, color=C['success'], alpha=140))
 
 
 class MemoryPage(BasePage):
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.SmoothPixmapTransform)
+
+        pixmap = QPixmap(BG_PATH)
+        if not pixmap.isNull():
+            scaled = pixmap.scaled(
+                self.size(),
+                Qt.KeepAspectRatioByExpanding,
+                Qt.SmoothTransformation
+            )
+            x = (self.width() - scaled.width()) // 2
+            y = (self.height() - scaled.height()) // 2
+            painter.drawPixmap(x, y, scaled)
+
+        painter.end()
+        super().paintEvent(event)
 
     def _build_page(self):
         layout = self._root_layout
@@ -110,7 +160,7 @@ class MemoryPage(BasePage):
         layout.setSpacing(0)
 
         container = QWidget(self)
-        container.setStyleSheet(f"background-color: {C['bg']};")
+        container.setStyleSheet("background: transparent;")
         c_layout = QVBoxLayout(container)
         c_layout.setContentsMargins(0, 0, 0, 0)
         c_layout.setSpacing(0)
@@ -125,19 +175,45 @@ class MemoryPage(BasePage):
         self._timer.timeout.connect(self._on_timeout)
         self._boxes = self._build_scoreboard(self._timer)
 
+        # Pastille de manche (badge pilule) au lieu d'un simple texte plat.
         self._section_lbl = QLabel("Manche 1 / 3")
         self._section_lbl.setAlignment(Qt.AlignCenter)
-        self._section_lbl.setFont(QFont("Segoe UI", 11, QFont.Bold))
-        self._section_lbl.setStyleSheet(f"color: {C['text_light']}; background: transparent;")
-        self._root_layout.addWidget(self._section_lbl)
+        self._section_lbl.setFixedHeight(32)
+        self._section_lbl.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        self._section_lbl.setStyleSheet(f"""
+            color: {C['primary']};
+            background-color: white;
+            border: 1px solid {C['border']};
+            border-radius: 16px;
+            padding: 0 20px;
+        """)
+        self._section_lbl.setGraphicsEffect(_make_shadow(blur=10, dy=2, alpha=40))
+        self._root_layout.addSpacing(6)
+        self._root_layout.addWidget(self._section_lbl, 0, Qt.AlignHCenter)
+        self._root_layout.addSpacing(6)
 
-        self._content = QFrame()
-        self._content.setStyleSheet("background: transparent; border: none;")
-        self._content_layout = QVBoxLayout(self._content)
+        # Carte "verre dépoli" qui encadre le plateau, cohérente avec les
+        # autres mini-jeux — le plateau lui-même garde tout l'espace
+        # disponible à l'intérieur (voir _compute_card_size / RESERVED_*).
+        self._content_card = QFrame()
+        self._content_card.setObjectName("memoryCard")
+        self._content_card.setStyleSheet("""
+            QFrame#memoryCard {
+                background-color: rgba(255, 255, 255, 0.55);
+                border-radius: 26px;
+            }
+        """)
+        self._content_card.setGraphicsEffect(_make_shadow(blur=30, dy=8, alpha=70))
+
+        card_outer = QVBoxLayout()
+        card_outer.setContentsMargins(20, 6, 20, 20)
+        card_outer.addWidget(self._content_card)
+        self._root_layout.addLayout(card_outer, stretch=1)
+
+        self._content_layout = QVBoxLayout(self._content_card)
         self._content_layout.setAlignment(Qt.AlignCenter)
-        self._content_layout.setContentsMargins(10, 4, 10, 8)
+        self._content_layout.setContentsMargins(16, 16, 16, 16)
         self._content_layout.setSpacing(8)
-        self._root_layout.addWidget(self._content, stretch=1)
 
     def _clear_content(self):
         self._clear_layout(self._content_layout)
@@ -154,6 +230,7 @@ class MemoryPage(BasePage):
                 child_layout = item.layout()
                 if child_layout:
                     self._clear_layout(child_layout)
+                    child_layout.setParent(None)
 
     # ── Cycle de vie ─────────────────────────────────────────────────────────
     def on_show(self, **kwargs):

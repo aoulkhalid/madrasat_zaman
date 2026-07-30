@@ -8,17 +8,59 @@ quelle équipe du match peut remporter chaque extrait.
 """
 import os
 from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
-                              QPushButton, QFrame, QWidget)
+                              QPushButton, QFrame, QWidget,
+                              QGraphicsDropShadowEffect)
 from PyQt5.QtCore    import Qt, QTimer
-from PyQt5.QtGui     import QFont
+from PyQt5.QtGui     import QFont, QColor, QPainter, QPixmap
 
 from pages.base_page import BasePage
 from widgets.circular_timer import CircularTimer
 from config import (C, BLINDTEST_DIR, BLINDTEST_ROUND_DURATION,
                      BLINDTEST_POINTS_CORRECT)
 
+# NOTE : adapte le nom de fichier si ton image de fond "blind test" porte un
+# autre nom dans assets/images. Le paintEvent ci-dessous ne fait rien si le
+# fichier est introuvable (pixmap.isNull()), donc aucun risque de crash —
+# juste pas de fond affiché tant que le chemin n'est pas correct.
+BG_PATH = os.path.abspath(
+    os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "assets",
+        "images",
+        "background2.png"
+    )
+).replace("\\", "/")
+
+
+def _make_shadow(blur=28, dx=0, dy=8, alpha=90):
+    """Petit utilitaire pour des ombres portées cohérentes dans toute la page."""
+    shadow = QGraphicsDropShadowEffect()
+    shadow.setBlurRadius(blur)
+    shadow.setOffset(dx, dy)
+    shadow.setColor(QColor(0, 0, 0, alpha))
+    return shadow
+
 
 class BlindTestPage(BasePage):
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.SmoothPixmapTransform)
+
+        pixmap = QPixmap(BG_PATH)
+        if not pixmap.isNull():
+            scaled = pixmap.scaled(
+                self.size(),
+                Qt.KeepAspectRatioByExpanding,
+                Qt.SmoothTransformation
+            )
+            x = (self.width() - scaled.width()) // 2
+            y = (self.height() - scaled.height()) // 2
+            painter.drawPixmap(x, y, scaled)
+
+        painter.end()
+        super().paintEvent(event)
 
     def _build_page(self):
         layout = self._root_layout
@@ -26,7 +68,7 @@ class BlindTestPage(BasePage):
         layout.setSpacing(0)
 
         container = QWidget(self)
-        container.setStyleSheet(f"background-color: {C['bg']};")
+        container.setStyleSheet("background: transparent;")
         c_layout = QVBoxLayout(container)
         c_layout.setContentsMargins(0, 0, 0, 0)
         c_layout.setSpacing(0)
@@ -46,24 +88,61 @@ class BlindTestPage(BasePage):
 
         self._section_lbl = QLabel("Extrait 1 / 8")
         self._section_lbl.setAlignment(Qt.AlignCenter)
-        self._section_lbl.setFont(QFont("Segoe UI", 11))
-        self._section_lbl.setStyleSheet(f"color: {C['text_light']}; background: transparent;")
+        self._section_lbl.setFont(QFont("Segoe UI", 12, QFont.DemiBold))
+        self._section_lbl.setStyleSheet(
+            f"color: {C['text_med']}; background: transparent; letter-spacing: 1px;"
+        )
         self._root_layout.addWidget(self._section_lbl)
 
-        # Zone de contenu dynamique
-        self._content = QFrame()
-        self._content.setStyleSheet("background: transparent; border: none;")
-        self._content_layout = QVBoxLayout(self._content)
+        # Zone de contenu dynamique — carte "verre dépoli" pour la lisibilité
+        # sur le fond illustré, sans toucher à la palette de couleurs (C).
+        self._content_card = QFrame()
+        self._content_card.setObjectName("blindtestCard")
+        self._content_card.setStyleSheet("""
+            QFrame#blindtestCard {
+                background-color: rgba(255, 255, 255, 0.90);
+                border-radius: 28px;
+            }
+        """)
+        self._content_card.setGraphicsEffect(_make_shadow(blur=34, dy=10, alpha=80))
+
+        card_outer = QVBoxLayout()
+        card_outer.setContentsMargins(28, 20, 28, 32)
+        card_outer.addWidget(self._content_card)
+        self._root_layout.addLayout(card_outer, stretch=1)
+
+        self._content_layout = QVBoxLayout(self._content_card)
         self._content_layout.setAlignment(Qt.AlignCenter)
-        self._content_layout.setSpacing(20)
-        self._root_layout.addWidget(self._content, stretch=1)
+        self._content_layout.setContentsMargins(36, 34, 36, 34)
+        self._content_layout.setSpacing(24)
+
+    @staticmethod
+    def _clear_layout(layout):
+        """Vide récursivement un layout : widgets ET sous-layouts.
+
+        item.widget() renvoie None quand l'item contient un layout imbriqué
+        (la rangée des boutons de buzz est ajoutée via addLayout()). Ne
+        traiter que les widgets directs laissait les boutons de l'extrait
+        précédent vivants et affichés sous les nouveaux -> effet "dupliqué".
+        """
+        while layout.count():
+            item = layout.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                # hide() immédiat : deleteLater() ne détruit le widget qu'au
+                # prochain passage de la boucle d'événements, donc sans
+                # hide() il resterait visible en superposition entre-temps.
+                w.hide()
+                w.deleteLater()
+                continue
+
+            child_layout = item.layout()
+            if child_layout is not None:
+                BlindTestPage._clear_layout(child_layout)
+                child_layout.setParent(None)
 
     def _clear_content(self):
-        while self._content_layout.count():
-            item = self._content_layout.takeAt(0)
-            w = item.widget()
-            if w:
-                w.deleteLater()
+        self._clear_layout(self._content_layout)
 
     # ── Cycle de vie ─────────────────────────────────────────────────────────
     def on_show(self, **kwargs):
@@ -89,23 +168,37 @@ class BlindTestPage(BasePage):
 
         icon = QLabel("🎧")
         icon.setAlignment(Qt.AlignCenter)
-        icon.setFont(QFont("Segoe UI", 48))
+        icon.setFont(QFont("Segoe UI", 72))
         icon.setStyleSheet("background: transparent;")
 
         self._play_btn = QPushButton("▶️  JOUER L'EXTRAIT")
-        self._play_btn.setFixedSize(280, 60)
-        self._play_btn.setFont(QFont("Segoe UI", 14, QFont.Bold))
+        self._play_btn.setFixedSize(300, 66)
+        self._play_btn.setFont(QFont("Segoe UI", 15, QFont.Bold))
         self._play_btn.setCursor(Qt.PointingHandCursor)
         self._play_btn.setStyleSheet(f"""
-            QPushButton {{ background-color: {C['primary']}; color: white; border-radius: 16px; }}
-            QPushButton:hover {{ background-color: {C['primary_light']}; }}
+            QPushButton {{
+                background-color: {C['primary']};
+                color: white;
+                border-radius: 18px;
+                border: none;
+            }}
+            QPushButton:hover {{
+                background-color: {C['primary_light']};
+            }}
+            QPushButton:pressed {{
+                padding-top: 3px;
+            }}
+            QPushButton:disabled {{
+                background-color: {C['primary_light']};
+            }}
         """)
+        self._play_btn.setGraphicsEffect(_make_shadow(blur=18, dy=6, alpha=60))
         self._play_btn.clicked.connect(self._play_track)
 
         self._answer_lbl = QLabel("")
         self._answer_lbl.setAlignment(Qt.AlignCenter)
         self._answer_lbl.setWordWrap(True)
-        self._answer_lbl.setFont(QFont("Segoe UI", 16, QFont.Bold))
+        self._answer_lbl.setFont(QFont("Segoe UI", 17, QFont.Bold))
         self._answer_lbl.setStyleSheet(f"color: {C['primary']}; background: transparent;")
 
         self._content_layout.addWidget(icon)
@@ -139,20 +232,44 @@ class BlindTestPage(BasePage):
 
         row = QHBoxLayout()
         row.setAlignment(Qt.AlignCenter)
-        row.setSpacing(16)
+        row.setSpacing(18)
 
         btn1 = QPushButton(f"✅  {team1.name} a trouvé")
         btn2 = QPushButton(f"✅  {team2.name} a trouvé")
         none_btn = QPushButton("❌  Personne n'a trouvé")
 
-        for btn, color in ((btn1, C['success']), (btn2, C['success']), (none_btn, C['error'])):
-            btn.setFixedHeight(56)
-            btn.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        # Gardées en attributs pour pouvoir les désactiver une fois la manche
+        # résolue (évite tout second clic une fois la réponse déjà validée).
+        self._buzz_buttons = (btn1, btn2, none_btn)
+
+        for btn, color, hover in (
+            (btn1, C['success'], "#219150"),
+            (btn2, C['success'], "#219150"),
+            (none_btn, C['error'], "#c0392b"),
+        ):
+            btn.setFixedHeight(60)
+            btn.setFont(QFont("Segoe UI", 13, QFont.Bold))
             btn.setCursor(Qt.PointingHandCursor)
             btn.setStyleSheet(f"""
-                QPushButton {{ background-color: {color}; color: white; border-radius: 14px; padding: 0 16px; }}
-                QPushButton:hover {{ opacity: 0.9; }}
+                QPushButton {{
+                    background-color: {color};
+                    color: white;
+                    border-radius: 16px;
+                    border: none;
+                    padding: 0 18px;
+                }}
+                QPushButton:hover {{
+                    background-color: {hover};
+                }}
+                QPushButton:pressed {{
+                    padding-top: 3px;
+                }}
+                QPushButton:disabled {{
+                    background-color: #cfd8dc;
+                    color: white;
+                }}
             """)
+            btn.setGraphicsEffect(_make_shadow(blur=16, dy=5, alpha=55))
 
         btn1.clicked.connect(lambda: self._resolve(team1))
         btn2.clicked.connect(lambda: self._resolve(team2))
@@ -167,6 +284,10 @@ class BlindTestPage(BasePage):
         if self._answered:
             return
         self._answered = True
+
+        for btn in getattr(self, "_buzz_buttons", ()):
+            btn.setEnabled(False)
+
         self._timer.stop()
         if self._channel:
             self.mw.audio.stop_clip(self._channel)

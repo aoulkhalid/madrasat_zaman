@@ -1,6 +1,6 @@
 """
 utils/asset_generator.py
-Génère les logos (60) et les sons (3 WAV).
+Génère les logos (60) et les sons (calm, victory, beep).
 Les images de différences sont fournies manuellement (1.Left.jpg … 30.Right.jpg).
 """
 import os, math, wave, struct
@@ -8,6 +8,17 @@ from PIL import Image, ImageDraw
 
 from config import LOGOS_DIR, SOUNDS_DIR
 from games.logo_data import ALL_LOGOS
+
+def _make_tick(path, dur=0.08):
+    """Le 'tak' : petit clic court, chaque seconde."""
+    rate = 44100
+    n = int(rate * dur)
+    s = []
+    for i in range(n):
+        t = i / rate
+        decay = math.exp(-t * 55)   # s'éteint très vite
+        s.append(math.sin(2 * math.pi * 1400 * t) * 0.8 * decay * 32767)
+    _write_wav(path, s)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # LOGOS — 60 logos stylisés générés par PIL
@@ -104,14 +115,15 @@ def _make_calm(path, dur=12):
         s.append(sum(math.sin(2*math.pi*f*t) for f in freqs)*amp*32767/3)
     _write_wav(path, s)
 
-def _make_tension(path, dur=12):
+def _make_beep(path, dur=0.6):
+    """Le 'tit' (1000 Hz) quand un chrono arrive à 0."""
     rate = 44100
-    freqs = [440.0, 466.16, 523.25]
+    n = int(rate * dur)
     s = []
-    for i in range(rate*dur):
-        t = i/rate
-        beat = 0.55+0.45*abs(math.sin(2*math.pi*2.5*t))
-        s.append(sum(math.sin(2*math.pi*f*t) for f in freqs)*0.28*beat*32767/3)
+    for i in range(n):
+        t = i / rate
+        fade = min(1.0, (n - i) / (rate * 0.08))
+        s.append(math.sin(2 * math.pi * 1000 * t) * 0.6 * fade * 32767)
     _write_wav(path, s)
 
 def _make_victory(path, dur=8):
@@ -144,7 +156,8 @@ def generate_all():
     # ── Audio ─────────────────────────────────────────────────────
     for fname, fn in [
         ("calm.wav",    _make_calm),
-        ("tension.wav", _make_tension),
+        ("tick.wav",    _make_tick),
+        ("beep.wav",    _make_beep),
         ("victory.wav", _make_victory),
     ]:
         p = os.path.join(SOUNDS_DIR, fname)
@@ -154,4 +167,4 @@ def generate_all():
 
 if __name__ == "__main__":
     generate_all()
-    print("✓ 60 logos + 3 sons générés.")
+    print("✓ logos + sons (calm, victory, beep) générés.")

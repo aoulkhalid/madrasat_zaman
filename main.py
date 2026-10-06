@@ -32,6 +32,7 @@ from config                         import QSS, APP_TITLE
 from controllers.tournament_controller import TournamentController
 from audio.manager                  import AudioManager
 from utils.asset_generator          import generate_all
+from widgets.circular_timer         import CircularTimer
 
 from pages.home_page        import HomePage
 from pages.menu_page        import MenuPage
@@ -56,16 +57,23 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(APP_TITLE)
         self.setStyleSheet(QSS)
 
+        # Génération des assets (avant AudioManager : beep.wav doit exister)
+        generate_all()
+
         # Contrôleurs
         self.tc    = TournamentController()
         self.audio = AudioManager()
 
-        # Génération des assets
-        generate_all()
+        # "tit" quand n'importe quel chrono arrive à 0
+        CircularTimer.on_zero = self.audio.play_beep
 
         # Widget central empilé
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
+
+        # "tak" chaque seconde + "tit" à 0
+        CircularTimer.on_tick = self.audio.play_tick
+        CircularTimer.on_zero = self.audio.play_beep
 
         # Créer toutes les pages
         self.pages = {}
@@ -82,7 +90,7 @@ class MainWindow(QMainWindow):
             ("blindtest",   BlindTestPage),
             ("investment",  InvestmentPage),
             ("transmission", TransmissionPage),
-            ("memory", MemoryPage),
+            ("memory",      MemoryPage),
             ("result",      ResultPage),
         ]:
             page = Cls(self)
@@ -99,18 +107,24 @@ class MainWindow(QMainWindow):
         self.show_page("home")
 
     def show_page(self, name: str, **kwargs):
+        # 7bess ay chrono dial l-page li ghadi nkherjo mnha
+        old = self.stack.currentWidget()
+        if old is not None:
+            for t in old.findChildren(CircularTimer):
+                t.stop()
+
         page = self.pages[name]
         page.on_show(**kwargs)
         self.stack.setCurrentWidget(page)
 
-        # Audio automatique
+        # Audio : musique seulement home/menu, victory sur result,
+        # silence dans les jeux (seulement "tak" / "tit" du chrono)
         if name in ("home", "menu"):
             self.audio.play("calm")
-        elif name in ("quiz", "logo", "difference", "secret_code", "element",
-              "heist", "cyber", "blindtest", "investment", "transmission", "memory"):
-            self.audio.play("tension")
         elif name == "result":
             self.audio.play("victory")
+        else:
+            self.audio.stop()
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:

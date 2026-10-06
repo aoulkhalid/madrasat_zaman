@@ -14,12 +14,17 @@ class CircularTimer(QWidget):
     timeout = pyqtSignal()
     ticked  = pyqtSignal(int)   # secondes restantes
 
+    # Callbacks globaux (branchés par MainWindow sur AudioManager)
+    on_tick = None   # "tak" chaque seconde (30, 29, ... 1)
+    on_zero = None   # "tit" quand on arrive à 0
+
     def __init__(self, parent=None, duration: int = 35, size: int = 88):
         super().__init__(parent)
-        self.duration  = duration
-        self.remaining = duration
-        self._running  = False
-        self._size     = size
+        self.duration   = duration
+        self.remaining  = duration
+        self._running   = False
+        self._size      = size
+        self.tick_sound = True   # mettre False pour couper le "tak" sur un chrono précis
         self.setFixedSize(size, size)
 
         self._qtimer = QTimer(self)
@@ -45,9 +50,30 @@ class CircularTimer(QWidget):
         self.update()
 
     def _tick(self):
+        # Page quittée (cachée) : on arrête sans bruit et sans timeout
+        if not self.isVisible():
+            self.stop()
+            return
+
         if self.remaining > 0:
             self.remaining -= 1
             self.ticked.emit(self.remaining)
+
+            if self.remaining == 0:
+                # Arrivé à 0 : "tit" puis fin
+                self.stop()
+                self.update()
+                cb = CircularTimer.on_zero
+                if cb:
+                    cb()
+                self.timeout.emit()
+                return
+
+            # Sinon : "tak" (30 tak, 29 tak, ... 1 tak)
+            if self.tick_sound:
+                cb = CircularTimer.on_tick
+                if cb:
+                    cb()
             self.update()
         else:
             self.stop()

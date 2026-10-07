@@ -32,6 +32,9 @@ from pages.base_page import BasePage
 from widgets.circular_timer import CircularTimer
 from config import C, TIMER_DURATION
 
+# Charger directement les 30 questions
+from games.element_data import ALL_COMBOS
+
 
 # ═════════════════════════════════════════════════════════════════════════════
 # BACKGROUND IMAGE
@@ -377,7 +380,7 @@ class ElementPage(
 
         # Compteur
         self._section_lbl = QLabel(
-            "Combinaison 1 / 6"
+            "Combinaison 1 / 30"
         )
 
         self._section_lbl.setAlignment(
@@ -544,7 +547,13 @@ class ElementPage(
         **kwargs
     ):
 
-        self._combos = self.mw.tc.get_element_slice()
+        # ================================================================
+        # IMPORTANT :
+        # Avant : get_element_slice() -> seulement 6 questions
+        # Maintenant : ALL_COMBOS -> les 30 questions complètes
+        # ================================================================
+
+        self._combos = ALL_COMBOS.copy()
 
         self._idx = 0
 

@@ -2,56 +2,129 @@
 """
 games/memory_data.py — 🧠 Memory Challenge
 
-Les valeurs ci-dessous sont des NOMS DE FICHIERS à placer dans :
+Images réelles utilisées dans :
     assets/images/memory/
 
-Formats acceptés : .png, .jpg, .jpeg, .webp
-Si un fichier est introuvable, la carte affiche automatiquement un repli
-emoji (❓ générique) à la place — l'app ne plantera jamais, mais mets bien
-tes images pour un rendu correct.
+Images nécessaires :
+    1.png → 30.png
 
-Chaque banque contient 3x le nombre d'images nécessaires par manche, pour
-que chaque match (Demi 1 / Demi 2 / Finale) pioche un lot DIFFÉRENT via
-tournament_controller.get_memory_pool() — plutôt que de toujours montrer
-exactement les mêmes images à chaque match.
+Chaque image correspond à une vraie image présente dans le dossier.
 
-Tailles nécessaires PAR MANCHE (pas au total) :
-  - 5  pour la Manche 1 (facile)
-  - 8  pour la Manche 2 (moyen)
-  - 10 pour la Manche 3 (difficile)
+Organisation :
+- EASY   : 5 images par manche
+- MEDIUM : 8 images par manche
+- HARD   : 10 images par manche
+
+Les images sont réparties en 3 groupes afin que les différents matchs
+utilisent des images différentes.
 """
 
+# ============================================================
+# 🟢 EASY — 5 images par manche
+# ============================================================
+
 EASY_IMAGES = [
-    # Match 1 (Demi-finale 1)
-    "computer.png", "cat.png", "car.png", "tree.png", "ball.png",
-    # Match 2 (Demi-finale 2)
-    "book.png", "sun.png", "moon.png", "star.png", "house.png",
-    # Match 3 (Finale)
-    "flower.png", "fish.png", "bird.png", "clock.png", "key.png",
+
+    # Match 1 — Demi-finale 1
+    "1.png",
+    "2.png",
+    "3.png",
+    "4.png",
+    "5.png",
+
+    # Match 2 — Demi-finale 2
+    "6.png",
+    "7.png",
+    "8.png",
+    "9.png",
+    "10.png",
+
+    # Match 3 — Finale
+    "11.png",
+    "12.png",
+    "13.png",
+    "14.png",
+    "15.png",
 ]
+
+
+# ============================================================
+# 🟡 MEDIUM — 8 images par manche
+# ============================================================
 
 MEDIUM_IMAGES = [
-    # Match 1 (Demi-finale 1)
-    "desktop.png", "robot.png", "dog.png", "earth.png",
-    "smartphone.png", "rocket.png", "guitar.png", "camera.png",
-    # Match 2 (Demi-finale 2)
-    "airplane.png", "bicycle.png", "umbrella.png", "compass.png",
-    "telescope.png", "lightbulb.png", "anchor.png", "hourglass.png",
-    # Match 3 (Finale)
-    "castle.png", "volcano.png", "windmill.png", "lighthouse.png",
-    "satellite.png", "submarine.png", "balloon.png", "kite.png",
+
+    # Match 1 — Demi-finale 1
+    "16.png",
+    "17.png",
+    "18.png",
+    "19.png",
+    "20.png",
+    "21.png",
+    "22.png",
+    "23.png",
+
+    # Match 2 — Demi-finale 2
+    "24.png",
+    "25.png",
+    "26.png",
+    "27.png",
+    "28.png",
+    "29.png",
+    "30.png",
+    "1.png",
+
+    # Match 3 — Finale
+    "2.png",
+    "3.png",
+    "4.png",
+    "5.png",
+    "6.png",
+    "7.png",
+    "8.png",
+    "9.png",
 ]
 
+
+# ============================================================
+# 🔴 HARD — 10 images par manche
+# ============================================================
+
 HARD_IMAGES = [
-    # Match 1 (Demi-finale 1)
-    "unicorn.png", "dragon.png", "mask.png", "crystal_ball.png", "moai.png",
-    "ufo.png", "circus_tent.png", "rainbow.png", "puzzle.png", "target.png",
-    # Match 2 (Demi-finale 2)
-    "phoenix.png", "griffin.png", "compass_rose.png", "hourglass_gold.png",
-    "labyrinth.png", "comet.png", "carnival_mask.png", "prism.png",
-    "chess_king.png", "treasure_chest.png",
-    # Match 3 (Finale)
-    "kraken.png", "pegasus.png", "sphinx.png", "meteor.png",
-    "clockwork.png", "aurora.png", "obelisk.png", "kaleidoscope.png",
-    "chess_queen.png", "golden_key.png",
+
+    # Match 1 — Demi-finale 1
+    "10.png",
+    "11.png",
+    "12.png",
+    "13.png",
+    "14.png",
+    "15.png",
+    "16.png",
+    "17.png",
+    "18.png",
+    "19.png",
+
+    # Match 2 — Demi-finale 2
+    "20.png",
+    "21.png",
+    "22.png",
+    "23.png",
+    "24.png",
+    "25.png",
+    "26.png",
+    "27.png",
+    "28.png",
+    "29.png",
+
+    # Match 3 — Finale
+    "30.png",
+    "1.png",
+    "2.png",
+    "3.png",
+    "4.png",
+    "5.png",
+    "6.png",
+    "7.png",
+    "8.png",
+    "9.png",
 ]

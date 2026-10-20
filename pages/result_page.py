@@ -16,9 +16,9 @@ import os
 
 BG_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "images", "background.png")
 
-ACCENT_BLUE   = "#4f8ef7"
-ACCENT_PURPLE = "#a855f7"
-BLUE_NAME     = "#4f8ef7"
+ACCENT_BLUE   = "#9A0FB0"
+ACCENT_PURPLE = "#D100DB"
+BLUE_NAME     = "#9A0FB0"
 TEXT_MUTED    = "rgba(255,255,255,180)"
 SUCCESS_COLOR = "#22d3a5"
 _TRANSPARENT  = "background: transparent; border: none; background-color: transparent;"
@@ -65,10 +65,10 @@ class _Background(QWidget):
             p.fillRect(self.rect(), QBrush(grad))
         p.fillRect(self.rect(), QColor(0, 0, 0, 30))
         lg = QLinearGradient(0, 0, w, 0)
-        lg.setColorAt(0.0,  QColor(79, 142, 247, 0))
-        lg.setColorAt(0.35, QColor(79, 142, 247, 160))
-        lg.setColorAt(0.65, QColor(168, 85, 247, 160))
-        lg.setColorAt(1.0,  QColor(168, 85, 247, 0))
+        lg.setColorAt(0.0,  QColor(154,15,176, 0))
+        lg.setColorAt(0.35, QColor(154,15,176, 160))
+        lg.setColorAt(0.65, QColor(209,0,219, 160))
+        lg.setColorAt(1.0,  QColor(209,0,219, 0))
         p.setPen(QPen(QBrush(lg), 2))
         p.drawLine(0, 2, w, 2)
 
@@ -88,10 +88,10 @@ class _GlassCard(QFrame):
         path.addRoundedRect(0, 0, r.width(), r.height(), self._radius, self._radius)
         p.fillPath(path, QBrush(QColor(255, 255, 255, self._alpha)))
         border_grad = QLinearGradient(0, 0, r.width(), 0)
-        border_grad.setColorAt(0.0,  QColor(79, 142, 247, 0))
-        border_grad.setColorAt(0.25, QColor(79, 142, 247, 120))
-        border_grad.setColorAt(0.75, QColor(168, 85, 247, 120))
-        border_grad.setColorAt(1.0,  QColor(168, 85, 247, 0))
+        border_grad.setColorAt(0.0,  QColor(154,15,176, 0))
+        border_grad.setColorAt(0.25, QColor(154,15,176, 120))
+        border_grad.setColorAt(0.75, QColor(209,0,219, 120))
+        border_grad.setColorAt(1.0,  QColor(209,0,219, 0))
         p.setPen(QPen(QBrush(border_grad), 1.5))
         p.setBrush(Qt.NoBrush)
         p.drawRoundedRect(r.adjusted(1, 1, -1, -1), self._radius, self._radius)
@@ -238,7 +238,7 @@ class ResultPage(BasePage):
         self._root_layout.addLayout(btn_row)
 
         # Footer
-        footer = QLabel("⬡  CS Club — Madrasat Zaman v3")
+        footer = QLabel("⬡  CodeX — Madrasat Zaman v3")
         footer.setAlignment(Qt.AlignCenter)
         footer.setStyleSheet(
             f"color: {ACCENT_BLUE}; font-size: 11px;"

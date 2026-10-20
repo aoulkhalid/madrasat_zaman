@@ -1,5 +1,5 @@
 """
-pages/home_page.py — Page d'accueil (VERSION CS CLUB DESIGN)
+pages/home_page.py — Page d'accueil (VERSION CODEX DESIGN)
 """
 from PyQt5.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QLabel,
@@ -89,7 +89,7 @@ class HomePage(BasePage):
         t2.setAlignment(Qt.AlignCenter)
         t2.setFont(QFont(font_family, 70, QFont.Bold))
         t2.setStyleSheet("""
-            color: #1a4a6b;
+            color: #2A0A3A;
             background: transparent;
         """)
         c_layout.addWidget(t2)
@@ -103,24 +103,24 @@ class HomePage(BasePage):
         self._start_btn.setFixedSize(280, 64)
         self._start_btn.setStyleSheet("""
             QPushButton {
-                background-color: #2196F3;
+                background-color: #9A0FB0;
                 color: white;
                 border: none;
                 border-radius: 14px;
                 letter-spacing: 2px;
             }
             QPushButton:hover {
-                background-color: #42A5F5;
+                background-color: #B31FCC;
             }
             QPushButton:pressed {
-                background-color: #1565C0;
+                background-color: #6B0F82;
             }
         """)
 
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(30)
         shadow.setOffset(0, 8)
-        shadow.setColor(QColor(30, 80, 150, 120))
+        shadow.setColor(QColor(154,15,176, 120))
         self._start_btn.setGraphicsEffect(shadow)
 
         self._start_btn.clicked.connect(lambda: self.mw.show_page("menu"))
@@ -133,10 +133,10 @@ class HomePage(BasePage):
         c_layout.addLayout(btn_row)
 
         # ───────────── FOOTER
-        footer = QLabel("Propulsé par CS Club")
+        footer = QLabel("Propulsé par CodeX")
         footer.setAlignment(Qt.AlignCenter)
         footer.setStyleSheet(
-            "color: #5a7a9a; font-size: 11px; margin-top: 10px;"
+            "color: #6B5A78; font-size: 11px; margin-top: 10px;"
         )
         c_layout.addWidget(footer)
 

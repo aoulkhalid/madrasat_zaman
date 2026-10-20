@@ -17,9 +17,9 @@ from config import C, TIMER_DURATION, POINTS_CORRECT, DIFF_DIR
 
 BG_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "images", "background2.png")
 
-ACCENT_BLUE   = "#4f8ef7"
-ACCENT_PURPLE = "#a855f7"
-BLUE_NAME     = "#4f8ef7"
+ACCENT_BLUE   = "#9A0FB0"
+ACCENT_PURPLE = "#D100DB"
+BLUE_NAME     = "#9A0FB0"
 TEXT_MUTED    = "rgba(255,255,255,180)"
 _TRANSPARENT  = "background: transparent; border: none; background-color: transparent;"
 
@@ -68,10 +68,10 @@ class _Background(QWidget):
             p.fillRect(self.rect(), QBrush(grad))
         p.fillRect(self.rect(), QColor(0, 0, 0, 30))
         lg = QLinearGradient(0, 0, w, 0)
-        lg.setColorAt(0.0,  QColor(79, 142, 247, 0))
-        lg.setColorAt(0.35, QColor(79, 142, 247, 160))
-        lg.setColorAt(0.65, QColor(168, 85, 247, 160))
-        lg.setColorAt(1.0,  QColor(168, 85, 247, 0))
+        lg.setColorAt(0.0,  QColor(154,15,176, 0))
+        lg.setColorAt(0.35, QColor(154,15,176, 160))
+        lg.setColorAt(0.65, QColor(209,0,219, 160))
+        lg.setColorAt(1.0,  QColor(209,0,219, 0))
         p.setPen(QPen(QBrush(lg), 2))
         p.drawLine(0, 2, w, 2)
 
@@ -89,7 +89,7 @@ class ImageCanvas(QLabel):
         self.setStyleSheet(
             "background: rgba(255,255,255,215);"
             "border-radius: 18px;"
-            "border: 2px solid rgba(79,142,247,80);"
+            "border: 2px solid rgba(154,15,176,80);"
             "padding: 0px;"
         )
 
@@ -306,10 +306,10 @@ class DifferencePage(BasePage):
         btn.setCursor(Qt.PointingHandCursor)
         btn.setStyleSheet(
             "QPushButton {"
-            f" background: rgba(79,142,247,35); color: {ACCENT_BLUE};"
+            f" background: rgba(154,15,176,35); color: {ACCENT_BLUE};"
             f" border: 2px solid {ACCENT_BLUE};"
             "  border-radius: 12px; padding: 0 14px; font-weight: bold; }"
-            "QPushButton:hover { background: rgba(79,142,247,70); }"
+            "QPushButton:hover { background: rgba(154,15,176,70); }"
             "QPushButton:disabled { background: rgba(150,150,150,20);"
             " color: #aaaaaa; border-color: #aaaaaa; }"
         )
@@ -412,7 +412,7 @@ class DifferencePage(BasePage):
 
     def _update_blue_circles(self):
         self._cv_right.set_circles(
-            [(bx, by, 0, "#4f8ef7") for bx, by in self._blue_circles]
+            [(bx, by, 0, "#9A0FB0") for bx, by in self._blue_circles]
         )
 
     def _evaluate_tries(self):

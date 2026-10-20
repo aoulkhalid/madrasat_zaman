@@ -11,9 +11,9 @@ from PyQt5.QtGui     import (QFont, QColor, QPainter, QPen, QBrush,
 from config          import C, TEAMS
 
 # ── Palette ────────────────────────────────────────────────────────────────────
-ACCENT_BLUE   = "#4f8ef7"
-ACCENT_PURPLE = "#a855f7"
-BLUE_NAME     = "#4f8ef7"
+ACCENT_BLUE   = "#9A0FB0"
+ACCENT_PURPLE = "#D100DB"
+BLUE_NAME     = "#9A0FB0"
 TEXT_MUTED    = "rgba(255,255,255,180)"
 
 
@@ -39,16 +39,16 @@ class HeaderWidget(QFrame):
             self._back.setFont(QFont("Segoe UI", 14))
             self._back.setFixedSize(36, 36)
             self._back.setStyleSheet(
-                "QPushButton { background: rgba(79,142,247,25);"
-                " border: 1.5px solid #4f8ef7;"
-                " border-radius: 18px; color: #4f8ef7; font-weight: bold; }"
-                "QPushButton:hover { background: rgba(79,142,247,80); }"
+                "QPushButton { background: rgba(154,15,176,25);"
+                " border: 1.5px solid #9A0FB0;"
+                " border-radius: 18px; color: #9A0FB0; font-weight: bold; }"
+                "QPushButton:hover { background: rgba(154,15,176,80); }"
             )
             self._back.clicked.connect(self.back_clicked.emit)
             layout.addWidget(self._back)
 
         # Logo texte — bleu gras
-        brand = QLabel("CS CLUB")
+        brand = QLabel("CODEX")
         brand.setObjectName("header_brand")
         brand.setFont(QFont("Georgia", 11, QFont.Bold))
         brand.setStyleSheet(
@@ -79,7 +79,7 @@ class HeaderWidget(QFrame):
                 "QPushButton { background: rgba(255,255,255,30);"
                 " border: 1px solid rgba(255,255,255,60);"
                 " border-radius: 20px; font-size: 16px; }"
-                "QPushButton:hover { background: rgba(79,142,247,80); }"
+                "QPushButton:hover { background: rgba(154,15,176,80); }"
             )
             layout.addWidget(self._audio_btn)
         else:
@@ -105,10 +105,10 @@ class HeaderWidget(QFrame):
         w = self.width()
         h = self.height()
         lg = QLinearGradient(0, 0, w, 0)
-        lg.setColorAt(0.0,  QColor(79, 142, 247, 0))
-        lg.setColorAt(0.25, QColor(79, 142, 247, 140))
-        lg.setColorAt(0.75, QColor(168, 85, 247, 140))
-        lg.setColorAt(1.0,  QColor(168, 85, 247, 0))
+        lg.setColorAt(0.0,  QColor(154,15,176, 0))
+        lg.setColorAt(0.25, QColor(154,15,176, 140))
+        lg.setColorAt(0.75, QColor(209,0,219, 140))
+        lg.setColorAt(1.0,  QColor(209,0,219, 0))
         p.setPen(QPen(QBrush(lg), 1.5))
         p.drawLine(0, h - 1, w, h - 1)
 
@@ -121,7 +121,7 @@ class TeamBannerWidget(QFrame):
         self.setObjectName("team_banner")
         self.setFixedHeight(38)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self._color = QColor(79, 142, 247)
+        self._color = QColor(154,15,176)
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -304,6 +304,6 @@ class BasePage(QWidget):
         btn.setStyleSheet(
             f"QPushButton {{ background: {ACCENT_BLUE}; color: red;"
             f" border-radius: 12px; border: none; }}"
-            f"QPushButton:hover {{ background: #3a7de8; }}"
+            f"QPushButton:hover {{ background: #7D0C92; }}"
         )
         return btn

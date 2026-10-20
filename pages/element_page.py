@@ -60,8 +60,8 @@ LETTERS = [
 
 
 LETTER_COLORS = [
-    "#4f8ef7",
-    "#a855f7",
+    "#9A0FB0",
+    "#D100DB",
     "#06b6d4",
     "#f59e0b"
 ]

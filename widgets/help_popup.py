@@ -19,8 +19,8 @@ from PyQt5.QtGui     import (QPainter, QColor, QFont, QBrush,
 
 # ── Constantes globales ────────────────────────────────────────────────────────
 MAX_HELP_USES = 3
-ACCENT_BLUE   = "#4f8ef7"
-ACCENT_PURPLE = "#a855f7"
+ACCENT_BLUE   = "#9A0FB0"
+ACCENT_PURPLE = "#D100DB"
 
 # ── Options prédéfinies par jeu ────────────────────────────────────────────────
 QUIZ_HELP_OPTIONS = [

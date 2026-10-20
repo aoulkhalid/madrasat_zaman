@@ -96,7 +96,7 @@ class CircularTimer(QWidget):
 
         # Fond blanc
         painter.setBrush(QColor("white"))
-        painter.setPen(QPen(QColor("#cde0ef"), 2))
+        painter.setPen(QPen(QColor("#E3D0EA"), 2))
         painter.drawEllipse(p, p, s - 2*p, s - 2*p)
 
         # Arc de progression
@@ -104,7 +104,7 @@ class CircularTimer(QWidget):
             fraction = self.remaining / self.duration
             arc_rect = QRect(p + 4, p + 4, s - 2*p - 8, s - 2*p - 8)
             span_deg = int(-fraction * 360 * 16)   # 1/16 de degré
-            col = QColor("#0d3b6e") if self.remaining > 10 else QColor("#e74c3c")
+            col = QColor("#2A0A3A") if self.remaining > 10 else QColor("#e74c3c")
             pen = QPen(col, 6)
             pen.setCapStyle(Qt.RoundCap)
             painter.setPen(pen)
@@ -112,7 +112,7 @@ class CircularTimer(QWidget):
             painter.drawArc(arc_rect, 90 * 16, span_deg)
 
         # Chiffre
-        num_color = QColor("#0d3b6e") if self.remaining > 10 else QColor("#e74c3c")
+        num_color = QColor("#2A0A3A") if self.remaining > 10 else QColor("#e74c3c")
         painter.setPen(num_color)
         painter.setFont(QFont("Arial", 17, QFont.Bold))
         painter.drawText(QRect(0, 0, s, s - 8), Qt.AlignCenter,

@@ -44,23 +44,23 @@ DIFF_PER_MATCH  = 10    # paires d'images par match
 
 # ── Couleurs ─────────────────────────────────────────────────────────────────
 C = {
-    "bg":            "#e8f1f8",
-    "bg_card":       "#f5f9fc",
+    "bg":            "#F3EAF6",
+    "bg_card":       "#FAF5FC",
     "white":         "#ffffff",
-    "primary":       "#0d3b6e",
-    "primary_mid":   "#1a5c8a",
-    "primary_light": "#2980b9",
-    "accent":        "#17a589",
+    "primary":       "#2A0A3A",
+    "primary_mid":   "#6B0F82",
+    "primary_light": "#9A0FB0",
+    "accent":        "#D100DB",
     "success":       "#27ae60",
     "success_bg":    "#d5f5e3",
     "error":         "#e74c3c",
     "error_bg":      "#fadbd8",
     "warning":       "#f39c12",
-    "text_dark":     "#1a2c42",
-    "text_med":      "#2c3e50",
-    "text_light":    "#7f8c8d",
-    "border":        "#cde0ef",
-    "shadow":        "#b2c5d6",
+    "text_dark":     "#1a0f22",
+    "text_med":      "#3b2a47",
+    "text_light":    "#7a6a86",
+    "border":        "#E3D0EA",
+    "shadow":        "#cdb4d8",
 }
 
 # ── QSS Thème global ──────────────────────────────────────────────────────────
@@ -160,7 +160,7 @@ QPushButton#answer_btn {{
     min-height: 48px;
 }}
 QPushButton#answer_btn:hover:enabled {{
-    background-color: #edf4fb;
+    background-color: #F6EBF9;
     border-color: {C['primary_light']};
 }}
 QPushButton#answer_btn:disabled {{

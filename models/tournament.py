@@ -36,23 +36,25 @@ class Tournament:
         winner = m.determine_winner()
 
         if self.current_match_idx == 0:
-            # Demi-finale 1 terminée → préparer semi-finale 2
             self.current_match_idx = 1
             return False
+
         elif self.current_match_idx == 1:
-            # Demi-finale 2 terminée → créer la finale
             w1 = self.matches[0].winner
             w2 = self.matches[1].winner
-            # Reset scores pour la finale
-            w1.reset()
-            w2.reset()
+
+            # IMPORTANT : copies avec score 0 pour la finale.
+            # On ne touche PAS aux Team des demi-finales, sinon leur score
+            # est effacé avant l'affichage de la page résultat.
+            f1 = Team(w1.key, w1.name, w1.color, w1.light, w1.emoji)
+            f2 = Team(w2.key, w2.name, w2.color, w2.light, w2.emoji)
+
             s = TOURNAMENT_STRUCTURE[2]
-            final = Match(s["id"], s["label"], w1, w2)
-            self.matches[2] = final
+            self.matches[2] = Match(s["id"], s["label"], f1, f2)
             self.current_match_idx = 2
             return False
+
         else:
-            # Finale terminée
             self.champion = winner
             return True
 

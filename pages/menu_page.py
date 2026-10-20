@@ -50,7 +50,7 @@ class _Background(QWidget):
 class MenuPage(BasePage):
 
     _GAMES = [
-        ("❓", "#1565C0", "#1E88E5", "QUIZ GAME",
+        ("❓", "#6B0F82", "#1E88E5", "QUIZ GAME",
          "20 questions QCM — alternance équipes — +5 pts / bonne réponse", "quiz"),
         ("🌿", "#00695C", "#00897B", "LOGO GAME",
          "20 logos — réponse orale — +5 pts", "logo"),
@@ -139,11 +139,11 @@ class MenuPage(BasePage):
                 margin: 2px 0;
             }
             QScrollBar::handle:vertical {
-                background: rgba(42, 127, 165, 190);
+                background: rgba(154,15,176, 190);
                 border-radius: 5px;
                 min-height: 32px;
             }
-            QScrollBar::handle:vertical:hover { background: rgba(42, 127, 165, 240); }
+            QScrollBar::handle:vertical:hover { background: rgba(154,15,176, 240); }
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
             QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }
         """)
@@ -158,7 +158,7 @@ class MenuPage(BasePage):
         title = QLabel("CHOISISSEZ UN JEU")
         title.setAlignment(Qt.AlignCenter)
         title.setFont(QFont("Segoe UI", 19, QFont.Bold))
-        title.setStyleSheet("color: #1a3a5c; background: transparent; margin-bottom: 4px;")
+        title.setStyleSheet("color: #2A0A3A; background: transparent; margin-bottom: 4px;")
         s_layout.addWidget(title)
         s_layout.addSpacing(8)
 
@@ -176,20 +176,20 @@ class MenuPage(BasePage):
         self._end_btn.setFont(QFont("Segoe UI", 13, QFont.Bold))
         self._end_btn.setStyleSheet("""
             QPushButton {
-                background-color: #2a7fa5;
+                background-color: #9A0FB0;
                 color: white;
                 border: none;
                 border-radius: 16px;
                 letter-spacing: 1px;
             }
-            QPushButton:hover  { background-color: #3a9abf; }
-            QPushButton:pressed { background-color: #1a5f80; }
+            QPushButton:hover  { background-color: #B31FCC; }
+            QPushButton:pressed { background-color: #6B0F82; }
             QPushButton:disabled { background-color: #bdc3c7; color: #888; }
         """)
         end_shadow = QGraphicsDropShadowEffect()
         end_shadow.setBlurRadius(22)
         end_shadow.setOffset(0, 6)
-        end_shadow.setColor(QColor(42, 127, 165, 130))
+        end_shadow.setColor(QColor(154,15,176, 130))
         self._end_btn.setGraphicsEffect(end_shadow)
         self._end_btn.clicked.connect(self._end_match)
 
@@ -200,10 +200,10 @@ class MenuPage(BasePage):
         s_layout.addSpacing(10)
 
         # ── Footer ────────────────────────────────────────────────
-        footer = QLabel("Propulsé par CS Club")
+        footer = QLabel("Propulsé par CodeX")
         footer.setAlignment(Qt.AlignCenter)
         footer.setStyleSheet(
-            "color: #5a7a9a; font-size: 11px; background: transparent; margin-top: 4px;"
+            "color: #6B5A78; font-size: 11px; background: transparent; margin-top: 4px;"
         )
         s_layout.addWidget(footer)
         s_layout.addStretch()
@@ -267,7 +267,7 @@ class MenuPage(BasePage):
 
         desc_lbl = QLabel(desc)
         desc_lbl.setFont(QFont("Segoe UI", 9))
-        desc_lbl.setStyleSheet("color: #5a7a9a; background: transparent;")
+        desc_lbl.setStyleSheet("color: #6B5A78; background: transparent;")
         desc_lbl.setWordWrap(True)
 
         txt.addWidget(name_lbl)
